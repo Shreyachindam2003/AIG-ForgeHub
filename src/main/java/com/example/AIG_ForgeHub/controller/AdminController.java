@@ -12,15 +12,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class AdminController {
 
     @GetMapping("/dashboard")
-    public String dashboard(
-            @AuthenticationPrincipal UserDetails userDetails,
-            Model model) {
-
-        model.addAttribute(
-                "email",
-                userDetails.getUsername()
-        );
-
+    public String dashboard(@AuthenticationPrincipal UserDetails userDetails, Model model) {
+        model.addAttribute("email", userDetails.getUsername());
         return "admin-dashboard";
     }
 }

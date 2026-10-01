@@ -13,6 +13,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @Controller
 @RequestMapping("/2fa")
 @RequiredArgsConstructor
@@ -36,10 +38,10 @@ public class TwoFactorController {
             String authorizationHeader,
             Model model) {
 
-        String token = getTokenFromHeader(authorizationHeader);
+        String token =
+                getTokenFromHeader(authorizationHeader);
 
         if (token == null) {
-
             return "redirect:/auth/login";
         }
 
@@ -47,11 +49,6 @@ public class TwoFactorController {
 
             String email =
                     jwtService.extractSubject(token);
-
-            if (jwtService.isMfaVerified(token)) {
-
-                return redirectBasedOnRole(email);
-            }
 
             String qrCode =
                     twoFactorService.generateQrCode(email);
@@ -65,13 +62,24 @@ public class TwoFactorController {
 
         } catch (Exception e) {
 
+            e.printStackTrace();
+
             return "redirect:/auth/login";
         }
     }
 
 
     @GetMapping("/verify")
-    public String verifyPage(
+    public String verifyPage() {
+
+        return "verify-otp";
+    }
+
+
+    @PostMapping("/verify")
+    @ResponseBody
+    public Map<String, Object> verifyOtp(
+            @Valid @ModelAttribute VerifyOtpRequest request,
             @RequestHeader(
                     value = "Authorization",
                     required = false
@@ -83,29 +91,10 @@ public class TwoFactorController {
 
         if (token == null) {
 
-            return "redirect:/auth/login";
-        }
-
-        return "verify-otp";
-    }
-
-
-    @PostMapping("/verify")
-    public String verifyOtp(
-            @Valid @ModelAttribute VerifyOtpRequest request,
-            @RequestHeader(
-                    value = "Authorization",
-                    required = false
-            )
-            String authorizationHeader,
-            Model model) {
-
-        String token =
-                getTokenFromHeader(authorizationHeader);
-
-        if (token == null) {
-
-            return "redirect:/auth/login";
+            return Map.of(
+                    "success", false,
+                    "message", "Access token missing"
+            );
         }
 
         try {
@@ -123,24 +112,20 @@ public class TwoFactorController {
 
             if (!valid) {
 
-                model.addAttribute(
-                        "error",
+                return Map.of(
+                        "success", false,
+                        "message",
                         "Invalid or expired OTP"
                 );
-
-                return "verify-otp";
             }
 
             User user =
                     userRepository.findByEmail(email)
                             .orElseThrow();
 
-            /*
-             * Remember me information
-             * refresh token expiry se derive kar sakte hain.
-             */
             boolean rememberMe =
-                    user.getRefreshTokenExpiry() != null &&
+                    user.getRefreshTokenExpiry() != null
+                            &&
                             user.getRefreshTokenExpiry()
                                     .isAfter(
                                             java.time.LocalDateTime
@@ -154,26 +139,43 @@ public class TwoFactorController {
                             rememberMe
                     );
 
-            return redirectBasedOnRole(
-                    finalResponse.getRole()
+            String nextPage;
+
+            if ("ADMIN".equalsIgnoreCase(
+                    finalResponse.getRole())) {
+
+                nextPage =
+                        "/admin/dashboard";
+
+            } else {
+
+                nextPage =
+                        "/vendor/dashboard";
+            }
+
+            return Map.of(
+                    "success",
+                    true,
+
+                    "accessToken",
+                    finalResponse.getAccessToken(),
+
+                    "nextPage",
+                    nextPage
             );
 
         } catch (Exception e) {
 
-            model.addAttribute(
-                    "error",
+            e.printStackTrace();
+
+            return Map.of(
+                    "success",
+                    false,
+
+                    "message",
                     "OTP verification failed"
             );
-
-            return "verify-otp";
         }
-    }
-
-
-    @GetMapping("/proceed")
-    public String proceed() {
-
-        return "redirect:/2fa/verify";
     }
 
 
@@ -193,27 +195,24 @@ public class TwoFactorController {
             @RequestParam String email,
             Model model) {
 
-        String qrCode =
-                twoFactorService.generateQrCode(email);
+        try {
 
-        model.addAttribute(
-                "qrCode",
-                qrCode
-        );
+            String qrCode =
+                    twoFactorService.generateQrCode(email);
 
-        return "show-qr";
-    }
+            model.addAttribute(
+                    "qrCode",
+                    qrCode
+            );
 
+            return "show-qr";
 
-    private String redirectBasedOnRole(
-            String role) {
+        } catch (Exception e) {
 
-        if ("ADMIN".equalsIgnoreCase(role)) {
+            e.printStackTrace();
 
-            return "redirect:/admin/dashboard";
+            return "redirect:/auth/login";
         }
-
-        return "redirect:/vendor/dashboard";
     }
 
 
@@ -221,7 +220,8 @@ public class TwoFactorController {
             String authorizationHeader) {
 
         if (authorizationHeader == null ||
-                !authorizationHeader.startsWith("Bearer ")) {
+                !authorizationHeader.startsWith(
+                        "Bearer ")) {
 
             return null;
         }

@@ -34,37 +34,54 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public LoginResponse login(LoginRequest loginRequest) {
 
-        try {
+        authenticationManager.authenticate(
+                UsernamePasswordAuthenticationToken.unauthenticated(
+                        loginRequest.getEmail(),
+                        loginRequest.getPassword()
+                )
+        );
 
-            authenticationManager.authenticate(
-                    UsernamePasswordAuthenticationToken.unauthenticated(
-                            loginRequest.getEmail(),
-                            loginRequest.getPassword()
-                    )
-            );
-
-        } catch (AuthenticationException e) {
-
-            throw new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED,
-                    "Invalid email or password"
-            );
-        }
-
-        User user = userRepository
-                .findByEmail(loginRequest.getEmail())
-                .orElseThrow(
-                        () -> new ResponseStatusException(
-                                HttpStatus.NOT_FOUND,
-                                "User not found"
-                        )
+        User user =
+                userRepository.findByEmail(
+                        loginRequest.getEmail()
+                ).orElseThrow(
+                        () -> new RuntimeException("User not found")
                 );
 
         /*
-         * First login:
-         * SecretKey abhi nahi hai.
+         * ADMIN ko Google Authenticator 2FA nahi chahiye.
+         * Isliye ADMIN ka JWT directly mfaVerified=true hoga.
+         *
+         * VENDOR ke liye pehle password login hoga,
+         * uske baad Google Authenticator verification hoga.
          */
-        if (Boolean.TRUE.equals(user.getIsFirstTimeLogin())
+        boolean mfaVerified =
+                "ADMIN".equalsIgnoreCase(user.getRole());
+
+        // Generate Access JWT
+        String accessToken =
+                jwtService.generateAccessToken(
+                        user.getEmail(),
+                        user.getRole(),
+                        mfaVerified
+                );
+
+        // Generate Refresh JWT
+        String refreshToken =
+                refreshTokenService.generateRefreshToken(
+                        user.getEmail(),
+                        user.getRole(),
+                        loginRequest.isRememberMe()
+                );
+
+        /*
+         * First-time VENDOR ke liye Google Authenticator
+         * secret key generate karenge.
+         *
+         * ADMIN ke liye secret key generate nahi hogi.
+         */
+        if ("VENDOR".equalsIgnoreCase(user.getRole())
+                && Boolean.TRUE.equals(user.getIsFirstTimeLogin())
                 && user.getSecretKey() == null) {
 
             String secretKey =
@@ -75,24 +92,6 @@ public class AuthServiceImpl implements AuthService {
             userRepository.save(user);
         }
 
-        /*
-         * Temporary access token.
-         * MFA complete hone tak dashboard access nahi milega.
-         */
-        String accessToken =
-                jwtService.generateAccessToken(
-                        user.getEmail(),
-                        user.getRole(),
-                        false
-                );
-
-        String refreshToken =
-                refreshTokenService.generateRefreshToken(
-                        user.getEmail(),
-                        user.getRole(),
-                        loginRequest.isRememberMe()
-                );
-
         return LoginResponse.builder()
                 .userId(user.getUserId())
                 .fullName(user.getFullName())
@@ -101,11 +100,12 @@ public class AuthServiceImpl implements AuthService {
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .firstTimeLogin(
-                        Boolean.TRUE.equals(user.getIsFirstTimeLogin())
+                        Boolean.TRUE.equals(
+                                user.getIsFirstTimeLogin()
+                        )
                 )
                 .build();
     }
-
     @Override
     public LoginResponse completeTwoFactor(
             String email,
@@ -147,6 +147,14 @@ public class AuthServiceImpl implements AuthService {
                 .refreshToken(refreshToken)
                 .firstTimeLogin(false)
                 .build();
+    }
+
+    @Override
+    public LoginResponse refreshAccessToken(
+            String refreshToken) {
+
+        return refreshTokenService
+                .refreshAccessToken(refreshToken);
     }
 
     @Override

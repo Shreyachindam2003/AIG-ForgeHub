@@ -22,135 +22,88 @@
 
 <body>
 
-<div class="container-fluid login-page">
+<div class="login-page">
 
-    <div class="row min-vh-100">
+    <div class="login-box">
 
-        <div class="col-md-6
-                    d-flex
-                    align-items-center
-                    justify-content-center">
+        <div class="brand">
 
-            <div class="login-box">
-
-                <div class="brand">
-
-                    ⚙
-                    <span>AIG Forge Hub</span>
-
-                </div>
-
-                <h2>Login</h2>
-
-                <p class="subtitle">
-                    Login to access your AIG ForgeHub account
-                </p>
-
-                <div th:if="${error}"
-                     class="alert alert-danger"
-                     th:text="${error}">
-                </div>
-
-                <form th:action="@{/auth/login}"
-                      method="post">
-
-                    <div class="mb-3">
-
-                        <label class="form-label">
-                            Enter Email
-                        </label>
-
-                        <input
-                                type="email"
-                                name="email"
-                                class="form-control"
-                                placeholder="Type your Email here"
-                                required>
-
-                    </div>
-
-                    <div class="mb-3">
-
-                        <label class="form-label">
-                            Enter your Password
-                        </label>
-
-                        <input
-                                type="password"
-                                name="password"
-                                class="form-control"
-                                placeholder="Type your password here"
-                                required>
-
-                    </div>
-
-                    <div class="remember-row">
-
-                        <label>
-
-                            <input
-                                    type="checkbox"
-                                    name="rememberMe">
-
-                            Remember me?
-
-                        </label>
-
-                        <a href="/auth/forgot-password">
-                            Forgot Password?
-                        </a>
-
-                    </div>
-
-                    <button
-                            type="submit"
-                            class="btn login-btn">
-
-                        Submit
-
-                    </button>
-
-                </form>
-
-            </div>
+            ⚙
+            <span>AIG Forge Hub</span>
 
         </div>
 
-        <div class="col-md-6 login-image-section">
+        <h2>Login</h2>
 
-            <div class="image-card">
+        <p class="subtitle">
+            Login to access your AIG ForgeHub account
+        </p>
 
-                <div class="fake-login-image">
+        <div th:if="${error}"
+             class="alert alert-danger"
+             th:text="${error}">
+        </div>
 
-                    <div class="monitor">
+        <form th:action="@{/auth/login}"
+              method="post">
 
-                        <div class="screen">
+            <div class="mb-3">
 
-                            <h5>Sign in</h5>
+                <label class="form-label">
+                    Enter Email
+                </label>
 
-                            <input
-                                    placeholder="E-mail">
-
-                            <input
-                                    placeholder="Password">
-
-                            <button>
-                                Login
-                            </button>
-
-                        </div>
-
-                    </div>
-
-                    <div class="person">
-                        👨‍💻
-                    </div>
-
-                </div>
+                <input
+                        type="email"
+                        name="email"
+                        class="form-control"
+                        placeholder="Type your Email here"
+                        required>
 
             </div>
 
-        </div>
+            <div class="mb-3">
+
+                <label class="form-label">
+                    Enter your Password
+                </label>
+
+                <input
+                        type="password"
+                        name="password"
+                        class="form-control"
+                        placeholder="Type your password here"
+                        required>
+
+            </div>
+
+            <div class="remember-row">
+
+                <label>
+
+                    <input
+                            type="checkbox"
+                            name="rememberMe">
+
+                    Remember me?
+
+                </label>
+
+                <a href="/auth/forgot-password">
+                    Forgot Password?
+                </a>
+
+            </div>
+
+            <button
+                    type="submit"
+                    class="btn login-btn">
+
+                Submit
+
+            </button>
+
+        </form>
 
     </div>
 

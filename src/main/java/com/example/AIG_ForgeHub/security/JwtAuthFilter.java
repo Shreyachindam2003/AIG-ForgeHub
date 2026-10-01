@@ -96,17 +96,6 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             return header.substring(BEARER_PREFIX.length());
         }
 
-        if (request.getCookies() != null) {
-
-            for (Cookie cookie : request.getCookies()) {
-
-                if ("accessToken".equals(cookie.getName())) {
-
-                    return cookie.getValue();
-                }
-            }
-        }
-
         return null;
     }
 }

@@ -17,6 +17,5 @@ public class VerifyEmailOtpRequest {
     private String email;
 
     @NotBlank
-    @Pattern(regexp = "\\d{6}")
     private String otp;
 }

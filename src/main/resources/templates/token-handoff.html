@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <title>AIG Forge Hub</title>
+
+</head>
+
+<body>
+
+<h3>Login successful. Redirecting...</h3>
+
+<script th:inline="javascript">
+
+    const accessToken =
+        /*[[${accessToken}]]*/ '';
+
+    const refreshToken =
+        /*[[${refreshToken}]]*/ '';
+
+    const nextPage =
+        /*[[${nextPage}]]*/ '';
+
+
+    console.log("========== TOKEN HANDOFF ==========");
+
+    console.log(
+        "ACCESS TOKEN EXISTS =",
+        accessToken.length > 0
+    );
+
+    console.log(
+        "REFRESH TOKEN EXISTS =",
+        refreshToken.length > 0
+    );
+
+    console.log(
+        "NEXT PAGE =",
+        nextPage
+    );
+
+
+    /*
+     * Save Access Token
+     */
+    sessionStorage.setItem(
+        "accessToken",
+        accessToken
+    );
+
+
+    /*
+     * Save Refresh Token
+     *
+     * Refresh token will be used when
+     * access token expires.
+     */
+    sessionStorage.setItem(
+        "refreshToken",
+        refreshToken
+    );
+
+
+    console.log(
+        "ACCESS TOKEN SAVED =",
+        sessionStorage.getItem("accessToken") !== null
+    );
+
+    console.log(
+        "REFRESH TOKEN SAVED =",
+        sessionStorage.getItem("refreshToken") !== null
+    );
+
+
+    /*
+     * Admin dashboard / Vendor dashboard
+     * requires Authorization header.
+     *
+     * Normal window.location.href does NOT
+     * send Authorization header.
+     *
+     * Therefore first request dashboard
+     * with JWT in Authorization header.
+     */
+    fetch(nextPage, {
+
+        method: "GET",
+
+        headers: {
+
+            "Authorization":
+                "Bearer " + accessToken
+
+        }
+
+    })
+        .then(response => {
+
+            console.log(
+                "DASHBOARD RESPONSE STATUS =",
+                response.status
+            );
+
+            if (!response.ok) {
+
+                throw new Error(
+                    "Unable to open dashboard"
+                );
+            }
+
+            return response.text();
+
+        })
+        .then(html => {
+
+            /*
+             * Replace current page with
+             * dashboard HTML.
+             */
+            document.open();
+
+            document.write(html);
+
+            document.close();
+
+        })
+        .catch(error => {
+
+            console.error(error);
+
+            document.body.innerHTML =
+                "<h3>Unable to open dashboard.</h3>";
+
+        });
+
+</script>
+
+</body>
+
+</html>

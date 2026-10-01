@@ -1,5 +1,7 @@
 package com.example.AIG_ForgeHub.service;
 
+import com.example.AIG_ForgeHub.dto.LoginResponse;
+
 public interface RefreshTokenService {
 
     String generateRefreshToken(
@@ -7,7 +9,9 @@ public interface RefreshTokenService {
             String role,
             boolean rememberMe);
 
-    String refreshAccessToken(String refreshToken);
+    LoginResponse refreshAccessToken(
+            String refreshToken);
 
-    void deleteRefreshToken(String email);
+    void deleteRefreshToken(
+            String email);
 }
