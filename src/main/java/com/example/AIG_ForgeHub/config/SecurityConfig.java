@@ -1,7 +1,7 @@
 package com.example.AIG_ForgeHub.config;
 
-import com.example.AIG_ForgeHub.serviceImp.CustomUserDetailsService;
 import com.example.AIG_ForgeHub.security.JwtAuthFilter;
+import com.example.AIG_ForgeHub.serviceImp.CustomUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -19,13 +19,12 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity,
-                                                   JwtAuthFilter jwtAuthFilter,
-                                                   AuthenticationEntryPoint authenticationEntryPoint) {
-        httpSecurity.csrf(csrf->{csrf.disable();});
+    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity,JwtAuthFilter jwtAuthFilter,AuthenticationEntryPoint authenticationEntryPoint) {
+        httpSecurity.csrf(csrf->csrf.disable());
 
         httpSecurity.authorizeHttpRequests(request->request
                 .requestMatchers("/", "/auth/**", "/2fa/**", "/css/**", "/js/**", "/images/**").permitAll()
+                .requestMatchers("/admin/dashboard","/vendor/dashboard").permitAll()
                 .requestMatchers("/admin/**").hasRole("ADMIN")
                 .requestMatchers("/vendor/**").hasRole("VENDOR")
                 .anyRequest().authenticated()
@@ -35,7 +34,8 @@ public class SecurityConfig {
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(exception->
                         exception.authenticationEntryPoint(authenticationEntryPoint))
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthFilter,UsernamePasswordAuthenticationFilter.class);
+
         return httpSecurity.build();
     }
 
@@ -45,8 +45,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(CustomUserDetailsService customUserDetailsService,
-                                                       PasswordEncoder passwordEncoder) {
+    public AuthenticationManager authenticationManager(CustomUserDetailsService customUserDetailsService,PasswordEncoder passwordEncoder) {
         DaoAuthenticationProvider daoAuthenticationProvider=new DaoAuthenticationProvider(customUserDetailsService);
         daoAuthenticationProvider.setPasswordEncoder(passwordEncoder);
         return new ProviderManager(daoAuthenticationProvider);
@@ -54,8 +53,6 @@ public class SecurityConfig {
 
     @Bean
     public AuthenticationEntryPoint authenticationEntryPoint() {
-        return (request,response,exception)->{
-            response.sendRedirect("/auth/login");
-        };
+        return (request,response,exception)->response.sendRedirect("/auth/login");
     }
 }

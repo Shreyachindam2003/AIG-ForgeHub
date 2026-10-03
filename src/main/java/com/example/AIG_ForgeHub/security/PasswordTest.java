@@ -1,3 +1,4 @@
+/*
 package com.example.AIG_ForgeHub.security;
 
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -14,3 +15,4 @@ public class PasswordTest {
         System.out.println(hash);
     }
 }
+*/

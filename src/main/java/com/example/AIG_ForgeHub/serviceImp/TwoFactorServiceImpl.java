@@ -7,6 +7,7 @@ import com.example.AIG_ForgeHub.util.QrCodeUtil;
 import com.warrenstrange.googleauth.GoogleAuthenticator;
 import com.warrenstrange.googleauth.GoogleAuthenticatorKey;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.net.URLEncoder;
@@ -14,6 +15,7 @@ import java.nio.charset.StandardCharsets;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class TwoFactorServiceImpl implements TwoFactorService {
 
     private final UserRepository userRepository;
@@ -22,11 +24,10 @@ public class TwoFactorServiceImpl implements TwoFactorService {
     @Override
     public String generateSecretKey() {
 
-        GoogleAuthenticator googleAuthenticator =
-                new GoogleAuthenticator();
+        GoogleAuthenticator googleAuthenticator=new GoogleAuthenticator();
+        GoogleAuthenticatorKey key=googleAuthenticator.createCredentials();
 
-        GoogleAuthenticatorKey key =
-                googleAuthenticator.createCredentials();
+        log.debug("2FA secret key generated successfully");
 
         return key.getKey();
     }
@@ -34,170 +35,103 @@ public class TwoFactorServiceImpl implements TwoFactorService {
     @Override
     public String generateQrCode(String email) {
 
-        User user =
-                userRepository.findByEmail(email)
-                        .orElseThrow(
-                                () -> new RuntimeException(
-                                        "User not found"
-                                )
-                        );
+        log.info("QR code generation requested for user: {}",email);
 
-        String secretKey =
-                user.getSecretKey();
+        User user=userRepository.findByEmail(email)
+                .orElseThrow(()->{
+                    log.warn("User not found while generating QR code: {}",email);
+                    return new RuntimeException("User not found");
+                });
 
-        if (secretKey == null ||
-                secretKey.isBlank()) {
+        String secretKey=user.getSecretKey();
 
-            throw new RuntimeException(
-                    "Secret key not found"
-            );
+        if (secretKey==null || secretKey.isBlank()) {
+
+            log.warn("2FA secret key not found for user: {}",email);
+
+            throw new RuntimeException("Secret key not found");
         }
 
-        String issuer = "AIG ForgeHub";
+        String issuer="AIG ForgeHub";
+        String encodedIssuer=URLEncoder.encode(issuer,StandardCharsets.UTF_8);
+        String encodedEmail=URLEncoder.encode(email,StandardCharsets.UTF_8);
 
-        String encodedIssuer =
-                URLEncoder.encode(
-                        issuer,
-                        StandardCharsets.UTF_8
-                );
+        String qrText="otpauth://totp/"
+                +encodedIssuer
+                +":"
+                +encodedEmail
+                +"?secret="
+                +secretKey
+                +"&issuer="
+                +encodedIssuer;
 
-        String encodedEmail =
-                URLEncoder.encode(
-                        email,
-                        StandardCharsets.UTF_8
-                );
+        try {
 
-        String qrText =
-                "otpauth://totp/"
-                        + encodedIssuer
-                        + ":"
-                        + encodedEmail
-                        + "?secret="
-                        + secretKey
-                        + "&issuer="
-                        + encodedIssuer;
+            String qrCode=qrCodeUtil.generateQrCode(qrText);
 
-        System.out.println(
-                "========== GENERATE QR START =========="
-        );
+            log.info("2FA QR code generated successfully for user: {}",email);
 
-        System.out.println(
-                "EMAIL = " + email
-        );
+            return qrCode;
 
-        System.out.println(
-                "SECRET KEY EXISTS = "
-                        + (secretKey != null)
-        );
+        } catch (Exception e) {
 
-        System.out.println(
-                "QR GENERATED SUCCESSFULLY"
-        );
+            log.error("Failed to generate 2FA QR code for user: {}",email,e);
 
-        System.out.println(
-                "========== GENERATE QR END =========="
-        );
-
-        return qrCodeUtil.generateQrCode(qrText);
+            throw new RuntimeException("Unable to generate QR code",e);
+        }
     }
 
     @Override
-    public boolean verifyOtp(
-            String email,
-            int otp) {
+    public boolean verifyOtp(String email,int otp) {
 
-        System.out.println(
-                "========== VERIFY GOOGLE OTP START =========="
-        );
+        log.info("2FA OTP verification requested for user: {}",email);
 
-        System.out.println(
-                "EMAIL = " + email
-        );
+        User user=userRepository.findByEmail(email)
+                .orElseThrow(()->{
+                    log.warn("User not found during 2FA verification: {}",email);
+                    return new RuntimeException("User not found");
+                });
 
-        System.out.println(
-                "OTP ENTERED = " + otp
-        );
+        String secretKey=user.getSecretKey();
 
-        User user =
-                userRepository.findByEmail(email)
-                        .orElseThrow(
-                                () -> new RuntimeException(
-                                        "User not found"
-                                )
-                        );
+        if (secretKey==null || secretKey.isBlank()) {
 
-        String secretKey =
-                user.getSecretKey();
-
-        if (secretKey == null ||
-                secretKey.isBlank()) {
-
-            System.out.println(
-                    "SECRET KEY NOT FOUND"
-            );
+            log.warn("2FA secret key not found for user: {}",email);
 
             return false;
         }
 
-        System.out.println(
-                "SECRET KEY EXISTS = true"
-        );
+        GoogleAuthenticator googleAuthenticator=new GoogleAuthenticator();
 
-        GoogleAuthenticator googleAuthenticator =
-                new GoogleAuthenticator();
+        boolean valid=googleAuthenticator.authorize(secretKey,otp);
 
-        boolean valid =
-                googleAuthenticator.authorize(
-                        secretKey,
-                        otp
-                );
-
-        System.out.println(
-                "GOOGLE OTP VALID = " + valid
-        );
-
-        System.out.println(
-                "========== VERIFY GOOGLE OTP END =========="
-        );
+        if (valid) {
+            log.info("2FA OTP verified successfully for user: {}",email);
+        } else {
+            log.warn("Invalid 2FA OTP for user: {}",email);
+        }
 
         return valid;
     }
 
     @Override
-    public void regenerateSecretKey(
-            String email) {
+    public void regenerateSecretKey(String email) {
 
-        System.out.println(
-                "========== REGENERATE SECRET START =========="
-        );
+        log.info("2FA secret regeneration requested for user: {}",email);
 
-        System.out.println(
-                "EMAIL = " + email
-        );
+        User user=userRepository.findByEmail(email)
+                .orElseThrow(()->{
+                    log.warn("User not found while regenerating 2FA secret: {}",email);
+                    return new RuntimeException("User not found");
+                });
 
-        User user =
-                userRepository.findByEmail(email)
-                        .orElseThrow(
-                                () -> new RuntimeException(
-                                        "User not found"
-                                )
-                        );
-
-        String newSecretKey =
-                generateSecretKey();
+        String newSecretKey=generateSecretKey();
 
         user.setSecretKey(newSecretKey);
-
         user.setIsFirstTimeLogin(true);
 
         userRepository.save(user);
 
-        System.out.println(
-                "NEW SECRET KEY SAVED"
-        );
-
-        System.out.println(
-                "========== REGENERATE SECRET END =========="
-        );
+        log.info("2FA secret regenerated successfully for user: {}",email);
     }
 }

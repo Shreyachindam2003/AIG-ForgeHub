@@ -1,6 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"
-      xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
 
@@ -12,130 +11,73 @@
 
 <body>
 
-<h3>Login successful. Redirecting...</h3>
+<p>Login successful. Redirecting...</p>
 
 <script th:inline="javascript">
 
-    const accessToken =
-        /*[[${accessToken}]]*/ '';
+    const accessToken=/*[[${accessToken}]]*/ '';
+    const refreshToken=/*[[${refreshToken}]]*/ '';
+    const nextPage=/*[[${nextPage}]]*/ '';
 
-    const refreshToken =
-        /*[[${refreshToken}]]*/ '';
+    if(nextPage==="/2fa/proceed") {
 
-    const nextPage =
-        /*[[${nextPage}]]*/ '';
+        const form=document.createElement("form");
 
+        form.method="POST";
+        form.action=nextPage;
 
-    console.log("========== TOKEN HANDOFF ==========");
+        const accessInput=document.createElement("input");
 
-    console.log(
-        "ACCESS TOKEN EXISTS =",
-        accessToken.length > 0
-    );
+        accessInput.type="hidden";
+        accessInput.name="accessToken";
+        accessInput.value=accessToken;
 
-    console.log(
-        "REFRESH TOKEN EXISTS =",
-        refreshToken.length > 0
-    );
+        const refreshInput=document.createElement("input");
 
-    console.log(
-        "NEXT PAGE =",
-        nextPage
-    );
+        refreshInput.type="hidden";
+        refreshInput.name="refreshToken";
+        refreshInput.value=refreshToken;
 
+        form.appendChild(accessInput);
+        form.appendChild(refreshInput);
 
-    /*
-     * Save Access Token
-     */
-    sessionStorage.setItem(
-        "accessToken",
-        accessToken
-    );
+        document.body.appendChild(form);
 
+        form.submit();
 
-    /*
-     * Save Refresh Token
-     *
-     * Refresh token will be used when
-     * access token expires.
-     */
-    sessionStorage.setItem(
-        "refreshToken",
-        refreshToken
-    );
+    } else {
 
-
-    console.log(
-        "ACCESS TOKEN SAVED =",
-        sessionStorage.getItem("accessToken") !== null
-    );
-
-    console.log(
-        "REFRESH TOKEN SAVED =",
-        sessionStorage.getItem("refreshToken") !== null
-    );
-
-
-    /*
-     * Admin dashboard / Vendor dashboard
-     * requires Authorization header.
-     *
-     * Normal window.location.href does NOT
-     * send Authorization header.
-     *
-     * Therefore first request dashboard
-     * with JWT in Authorization header.
-     */
-    fetch(nextPage, {
-
-        method: "GET",
-
-        headers: {
-
-            "Authorization":
-                "Bearer " + accessToken
-
-        }
-
-    })
-        .then(response => {
-
-            console.log(
-                "DASHBOARD RESPONSE STATUS =",
-                response.status
-            );
-
-            if (!response.ok) {
-
-                throw new Error(
-                    "Unable to open dashboard"
-                );
+        fetch(nextPage,{
+            method:"GET",
+            headers:{
+                "Authorization":"Bearer "+accessToken,
+                "X-Refresh-Token":refreshToken
             }
-
-            return response.text();
-
         })
-        .then(html => {
+            .then(response=>{
 
-            /*
-             * Replace current page with
-             * dashboard HTML.
-             */
-            document.open();
+                if(!response.ok) {
+                    throw new Error("Unable to open next page");
+                }
 
-            document.write(html);
+                return response.text();
 
-            document.close();
+            })
+            .then(html=>{
 
-        })
-        .catch(error => {
+                document.open();
+                document.write(html);
+                document.close();
 
-            console.error(error);
+            })
+            .catch(error=>{
 
-            document.body.innerHTML =
-                "<h3>Unable to open dashboard.</h3>";
+                console.error(error);
 
-        });
+                window.location.href="/auth/login";
+
+            });
+    }
 
 </script>
 

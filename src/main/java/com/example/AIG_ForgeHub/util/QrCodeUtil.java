@@ -14,22 +14,17 @@ import java.util.Base64;
 public class QrCodeUtil {
 
     public String generateQrCode(String text) {
-
         try {
+            QRCodeWriter qrCodeWriter = new QRCodeWriter();
 
-            QRCodeWriter qrCodeWriter =
-                    new QRCodeWriter();
+            BitMatrix bitMatrix = qrCodeWriter.encode(
+                    text,
+                    BarcodeFormat.QR_CODE,
+                    300,
+                    300
+            );
 
-            BitMatrix bitMatrix =
-                    qrCodeWriter.encode(
-                            text,
-                            BarcodeFormat.QR_CODE,
-                            300,
-                            300
-                    );
-
-            ByteArrayOutputStream outputStream =
-                    new ByteArrayOutputStream();
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
             MatrixToImageWriter.writeToStream(
                     bitMatrix,
@@ -37,20 +32,12 @@ public class QrCodeUtil {
                     outputStream
             );
 
-            String base64 =
-                    Base64.getEncoder()
-                            .encodeToString(
-                                    outputStream.toByteArray()
-                            );
+            String base64 = Base64.getEncoder().encodeToString(outputStream.toByteArray());
 
             return "data:image/png;base64," + base64;
 
         } catch (WriterException | java.io.IOException e) {
-
-            throw new RuntimeException(
-                    "Unable to generate QR code",
-                    e
-            );
+            throw new RuntimeException("Unable to generate QR code", e);
         }
     }
 }

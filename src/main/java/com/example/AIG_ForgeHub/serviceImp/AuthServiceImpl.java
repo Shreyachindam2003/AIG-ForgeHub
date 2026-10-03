@@ -1,6 +1,5 @@
 package com.example.AIG_ForgeHub.serviceImp;
 
-
 import com.example.AIG_ForgeHub.dto.LoginRequest;
 import com.example.AIG_ForgeHub.dto.LoginResponse;
 import com.example.AIG_ForgeHub.model.User;
@@ -10,29 +9,28 @@ import com.example.AIG_ForgeHub.service.AuthService;
 import com.example.AIG_ForgeHub.service.RefreshTokenService;
 import com.example.AIG_ForgeHub.service.TwoFactorService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
-
     private final AuthenticationManager authenticationManager;
-
     private final JwtService jwtService;
-
     private final TwoFactorService twoFactorService;
-
     private final RefreshTokenService refreshTokenService;
 
     @Override
     public LoginResponse login(LoginRequest loginRequest) {
+
+        log.info("Authenticating user: {}",loginRequest.getEmail());
 
         authenticationManager.authenticate(
                 UsernamePasswordAuthenticationToken.unauthenticated(
@@ -41,55 +39,41 @@ public class AuthServiceImpl implements AuthService {
                 )
         );
 
-        User user =
-                userRepository.findByEmail(
-                        loginRequest.getEmail()
-                ).orElseThrow(
-                        () -> new RuntimeException("User not found")
-                );
+        log.info("User authentication successful: {}",loginRequest.getEmail());
 
-        /*
-         * ADMIN ko Google Authenticator 2FA nahi chahiye.
-         * Isliye ADMIN ka JWT directly mfaVerified=true hoga.
-         *
-         * VENDOR ke liye pehle password login hoga,
-         * uske baad Google Authenticator verification hoga.
-         */
-        boolean mfaVerified =
-                "ADMIN".equalsIgnoreCase(user.getRole());
+        User user=userRepository.findByEmail(loginRequest.getEmail())
+                .orElseThrow(()->new RuntimeException("User not found"));
 
-        // Generate Access JWT
-        String accessToken =
-                jwtService.generateAccessToken(
-                        user.getEmail(),
-                        user.getRole(),
-                        mfaVerified
-                );
+        boolean firstTimeLogin=Boolean.TRUE.equals(user.getIsFirstTimeLogin());
 
-        // Generate Refresh JWT
-        String refreshToken =
-                refreshTokenService.generateRefreshToken(
-                        user.getEmail(),
-                        user.getRole(),
-                        loginRequest.isRememberMe()
-                );
+        String accessToken=jwtService.generateAccessToken(
+                user.getEmail(),
+                user.getRole(),
+                false
+        );
 
-        /*
-         * First-time VENDOR ke liye Google Authenticator
-         * secret key generate karenge.
-         *
-         * ADMIN ke liye secret key generate nahi hogi.
-         */
-        if ("VENDOR".equalsIgnoreCase(user.getRole())
-                && Boolean.TRUE.equals(user.getIsFirstTimeLogin())
-                && user.getSecretKey() == null) {
+        String refreshToken=refreshTokenService.generateRefreshToken(
+                user.getEmail(),
+                user.getRole(),
+                loginRequest.isRememberMe()
+        );
 
-            String secretKey =
-                    twoFactorService.generateSecretKey();
+        log.info("JWT tokens generated for user: {}",user.getEmail());
+
+        if (user.getSecretKey()==null || user.getSecretKey().isBlank()) {
+
+            String secretKey=twoFactorService.generateSecretKey();
 
             user.setSecretKey(secretKey);
-
             userRepository.save(user);
+
+            log.info("2FA secret generated for user: {}",user.getEmail());
+        }
+
+        if (firstTimeLogin) {
+            log.info("First time login user requires 2FA setup: {}",user.getEmail());
+        } else {
+            log.info("Existing user requires 2FA verification: {}",user.getEmail());
         }
 
         return LoginResponse.builder()
@@ -99,44 +83,42 @@ public class AuthServiceImpl implements AuthService {
                 .role(user.getRole())
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
-                .firstTimeLogin(
-                        Boolean.TRUE.equals(
-                                user.getIsFirstTimeLogin()
-                        )
-                )
+                .firstTimeLogin(firstTimeLogin)
                 .build();
     }
+
     @Override
-    public LoginResponse completeTwoFactor(
-            String email,
-            boolean rememberMe) {
+    public LoginResponse completeTwoFactor(String email,String refreshToken) {
 
-        User user = userRepository
-                .findByEmail(email)
-                .orElseThrow(
-                        () -> new ResponseStatusException(
-                                HttpStatus.NOT_FOUND,
-                                "User not found"
-                        )
-                );
+        log.info("Completing 2FA authentication for user: {}",email);
 
-        String accessToken =
-                jwtService.generateAccessToken(
-                        user.getEmail(),
-                        user.getRole(),
-                        true
-                );
+        User user=userRepository.findByEmail(email)
+                .orElseThrow(()->new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "User not found"
+                ));
 
-        String refreshToken =
-                refreshTokenService.generateRefreshToken(
-                        user.getEmail(),
-                        user.getRole(),
-                        rememberMe
-                );
+        if (refreshToken==null || refreshToken.isBlank()) {
+
+            log.info("Generating new refresh token for user: {}",email);
+
+            refreshToken=refreshTokenService.generateRefreshToken(
+                    user.getEmail(),
+                    user.getRole(),
+                    false
+            );
+        }
+
+        String accessToken=jwtService.generateAccessToken(
+                user.getEmail(),
+                user.getRole(),
+                true
+        );
 
         user.setIsFirstTimeLogin(false);
-
         userRepository.save(user);
+
+        log.info("2FA authentication completed successfully for user: {}",email);
 
         return LoginResponse.builder()
                 .userId(user.getUserId())
@@ -150,16 +132,22 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public LoginResponse refreshAccessToken(
-            String refreshToken) {
+    public LoginResponse refreshAccessToken(String refreshToken) {
 
-        return refreshTokenService
-                .refreshAccessToken(refreshToken);
+        log.info("Access token refresh requested");
+
+        LoginResponse response=refreshTokenService.refreshAccessToken(refreshToken);
+
+        log.info("Access token refreshed successfully for user: {}",response.getEmail());
+
+        return response;
     }
 
     @Override
-    public void logout(String email) {
+    public void logout(String refreshToken) {
 
-        refreshTokenService.deleteRefreshToken(email);
+        refreshTokenService.deleteRefreshToken(refreshToken);
+
+        log.info("Refresh token revoked successfully");
     }
 }

@@ -5,16 +5,11 @@ import com.example.AIG_ForgeHub.dto.LoginResponse;
 
 public interface AuthService {
 
-    LoginResponse login(
-            LoginRequest loginRequest);
+    LoginResponse login(LoginRequest loginRequest);
 
-    LoginResponse completeTwoFactor(
-            String email,
-            boolean rememberMe);
+    LoginResponse completeTwoFactor(String email,String refreshToken);
 
-    LoginResponse refreshAccessToken(
-            String refreshToken);
+    LoginResponse refreshAccessToken(String refreshToken);
 
-    void logout(
-            String email);
+    void logout(String refreshToken);
 }

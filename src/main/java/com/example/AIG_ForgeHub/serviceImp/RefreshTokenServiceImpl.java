@@ -6,6 +6,7 @@ import com.example.AIG_ForgeHub.repository.UserRepository;
 import com.example.AIG_ForgeHub.security.JwtService;
 import com.example.AIG_ForgeHub.service.RefreshTokenService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -13,11 +14,10 @@ import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
-public class RefreshTokenServiceImpl
-        implements RefreshTokenService {
+@Slf4j
+public class RefreshTokenServiceImpl implements RefreshTokenService {
 
     private final UserRepository userRepository;
-
     private final JwtService jwtService;
 
     @Value("${jwt.refresh-token-expiration-ms}")
@@ -27,146 +27,78 @@ public class RefreshTokenServiceImpl
     private long rememberMeExpirationMs;
 
     @Override
-    public String generateRefreshToken(
-            String email,
-            String role,
-            boolean rememberMe) {
+    public String generateRefreshToken(String email,String role,boolean rememberMe) {
 
-        long expiration =
-                rememberMe
-                        ? rememberMeExpirationMs
-                        : refreshTokenExpirationMs;
+        long expiration=rememberMe
+                ? rememberMeExpirationMs
+                : refreshTokenExpirationMs;
 
-        String token =
-                jwtService.generateRefreshToken(
-                        email,
-                        role,
-                        expiration
-                );
+        String token=jwtService.generateRefreshToken(
+                email,
+                role,
+                expiration
+        );
 
-        User user =
-                userRepository.findByEmail(email)
-                        .orElseThrow(
-                                () -> new RuntimeException(
-                                        "User not found"
-                                )
-                        );
+        User user=userRepository.findByEmail(email)
+                .orElseThrow(()->new RuntimeException("User not found"));
 
         user.setRefreshTokenHash(token);
-
         user.setRefreshTokenExpiry(
-                LocalDateTime.now()
-                        .plusNanos(
-                                expiration * 1_000_000
-                        )
+                LocalDateTime.now().plusNanos(expiration*1_000_000)
         );
 
         userRepository.save(user);
+
+        log.info("Refresh token generated and stored for user: {} with rememberMe: {}",email,rememberMe);
 
         return token;
     }
 
     @Override
-    public LoginResponse refreshAccessToken(
-            String refreshToken) {
+    public LoginResponse refreshAccessToken(String refreshToken) {
 
-        /*
-         * STEP 1:
-         * Check whether refresh token is structurally
-         * valid and not expired.
-         */
+        if (refreshToken==null || refreshToken.isBlank()) {
+
+            log.warn("Refresh token missing");
+
+            throw new RuntimeException("Refresh token missing");
+        }
+
         if (!jwtService.isTokenValid(refreshToken)) {
 
-            throw new RuntimeException(
-                    "Invalid refresh token"
-            );
+            log.warn("Invalid refresh token received");
+
+            throw new RuntimeException("Invalid refresh token");
         }
 
-        /*
-         * STEP 2:
-         * Make sure this JWT is actually a
-         * refresh token and not an access token.
-         */
         if (!jwtService.isRefreshToken(refreshToken)) {
 
-            throw new RuntimeException(
-                    "Invalid refresh token"
-            );
+            log.warn("Non-refresh token used for token refresh");
+
+            throw new RuntimeException("Invalid refresh token");
         }
 
-        /*
-         * STEP 3:
-         * Find the user whose current refresh token
-         * matches the incoming token.
-         */
-        User user =
-                userRepository
-                        .findByRefreshTokenHash(refreshToken)
-                        .orElseThrow(
-                                () -> new RuntimeException(
-                                        "Refresh token not found"
-                                )
-                        );
+        User user=userRepository.findByRefreshTokenHash(refreshToken)
+                .orElseThrow(()->{
+                    log.warn("Refresh token not found in database");
+                    return new RuntimeException("Refresh token not found");
+                });
 
-        /*
-         * STEP 4:
-         * Check database expiry.
-         */
-        if (user.getRefreshTokenExpiry() == null ||
-                user.getRefreshTokenExpiry()
-                        .isBefore(LocalDateTime.now())) {
+        if (user.getRefreshTokenExpiry()==null ||
+                user.getRefreshTokenExpiry().isBefore(LocalDateTime.now())) {
 
-            throw new RuntimeException(
-                    "Refresh token expired"
-            );
+            log.warn("Refresh token expired for user: {}",user.getEmail());
+
+            throw new RuntimeException("Refresh token expired");
         }
 
-        /*
-         * STEP 5:
-         * Determine whether the original refresh
-         * token was a Remember Me token.
-         *
-         * Normal token = 1 day
-         * Remember Me = 30 days
-         */
-        boolean rememberMe =
-                user.getRefreshTokenExpiry()
-                        .isAfter(
-                                LocalDateTime.now()
-                                        .plusDays(2)
-                        );
+        String newAccessToken=jwtService.generateAccessToken(
+                user.getEmail(),
+                user.getRole(),
+                true
+        );
 
-        /*
-         * STEP 6:
-         * Generate NEW access token.
-         */
-        String newAccessToken =
-                jwtService.generateAccessToken(
-                        user.getEmail(),
-                        user.getRole(),
-                        true
-                );
-
-        /*
-         * STEP 7:
-         * IMPORTANT:
-         * Generate NEW refresh token.
-         *
-         * Old refresh token will be replaced.
-         */
-        String newRefreshToken =
-                generateRefreshToken(
-                        user.getEmail(),
-                        user.getRole(),
-                        rememberMe
-                );
-
-        /*
-         * At this point:
-         *
-         * OLD RT → invalid
-         * NEW RT → stored in DB
-         */
+        log.info("New access token generated using refresh token for user: {}",user.getEmail());
 
         return LoginResponse.builder()
                 .userId(user.getUserId())
@@ -174,37 +106,35 @@ public class RefreshTokenServiceImpl
                 .email(user.getEmail())
                 .role(user.getRole())
                 .accessToken(newAccessToken)
-                .refreshToken(newRefreshToken)
-                .firstTimeLogin(
-                        Boolean.TRUE.equals(
-                                user.getIsFirstTimeLogin()
-                        )
-                )
+                .refreshToken(refreshToken)
+                .firstTimeLogin(Boolean.TRUE.equals(user.getIsFirstTimeLogin()))
                 .build();
     }
 
     @Override
-    public void deleteRefreshToken(
-            String email) {
+    public void deleteRefreshToken(String refreshToken) {
 
-        User user =
-                userRepository
-                        .findByEmail(email)
-                        .orElse(null);
+        if (refreshToken==null || refreshToken.isBlank()) {
 
-        if (user != null) {
+            log.warn("Logout requested without refresh token");
 
-            /*
-             * Revocation:
-             *
-             * Existing refresh token becomes
-             * invalid immediately.
-             */
+            return;
+        }
+
+        User user=userRepository.findByRefreshTokenHash(refreshToken)
+                .orElse(null);
+
+        if (user!=null) {
+
             user.setRefreshTokenHash(null);
-
             user.setRefreshTokenExpiry(null);
-
             userRepository.save(user);
+
+            log.info("Refresh token revoked successfully for user: {}",user.getEmail());
+
+        } else {
+
+            log.warn("Refresh token not found during logout");
         }
     }
 }

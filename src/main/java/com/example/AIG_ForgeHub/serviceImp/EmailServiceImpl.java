@@ -4,6 +4,7 @@ import com.example.AIG_ForgeHub.model.User;
 import com.example.AIG_ForgeHub.repository.UserRepository;
 import com.example.AIG_ForgeHub.service.EmailService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -14,211 +15,94 @@ import java.util.Random;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class EmailServiceImpl implements EmailService {
 
     private final UserRepository userRepository;
-
     private final JavaMailSender javaMailSender;
-
     private final PasswordEncoder passwordEncoder;
-
 
     @Override
     public void sendOtp(String email) {
 
-        System.out.println(
-                "========== SEND EMAIL OTP START =========="
-        );
+        log.info("OTP generation requested for user: {}",email);
 
-        System.out.println(
-                "EMAIL RECEIVED = " + email
-        );
+        User user=userRepository.findByEmail(email)
+                .orElseThrow(()->{
+                    log.warn("OTP requested for unregistered email: {}",email);
+                    return new RuntimeException("Email not registered");
+                });
 
-
-        User user =
-                userRepository
-                        .findByEmail(email)
-                        .orElseThrow(
-                                () -> new RuntimeException(
-                                        "Email not registered"
-                                )
-                        );
-
-
-        System.out.println(
-                "USER FOUND = " + user.getEmail()
-        );
-
-
-        String otp =
-                String.format(
-                        "%06d",
-                        new Random().nextInt(1000000)
-                );
-
-
-        System.out.println(
-                "OTP GENERATED = " + otp
-        );
-
-
-        String otpHash =
-                passwordEncoder.encode(otp);
-
+        String otp=String.format("%06d",new Random().nextInt(1000000));
+        String otpHash=passwordEncoder.encode(otp);
 
         user.setEmailOtpHash(otpHash);
-
-        user.setEmailOtpExpiry(
-                LocalDateTime.now().plusMinutes(5)
-        );
-
+        user.setEmailOtpExpiry(LocalDateTime.now().plusMinutes(5));
         userRepository.save(user);
 
-
-        System.out.println(
-                "OTP SAVED IN DATABASE"
-        );
-
-
-        SimpleMailMessage message =
-                new SimpleMailMessage();
-
+        SimpleMailMessage message=new SimpleMailMessage();
         message.setTo(user.getEmail());
-
-        message.setSubject(
-                "AIG ForgeHub - OTP Verification"
-        );
-
+        message.setSubject("AIG ForgeHub - OTP Verification");
         message.setText(
-                "Hello " + user.getFullName()
-                        + ",\n\n"
-                        + "Your AIG ForgeHub OTP is: "
-                        + otp
-                        + "\n\n"
-                        + "This OTP is valid for 5 minutes."
-                        + "\n\n"
-                        + "If you did not request this OTP, "
-                        + "please ignore this email."
+                "Hello "+user.getFullName()+",\n\n"
+                        +"Your AIG ForgeHub OTP is: "+otp+"\n\n"
+                        +"This OTP is valid for 5 minutes.\n\n"
+                        +"If you did not request this OTP, please ignore this email."
         );
 
+        try {
 
-        System.out.println(
-                "SENDING EMAIL..."
-        );
+            javaMailSender.send(message);
 
+            log.info("OTP email sent successfully to user: {}",email);
 
-        javaMailSender.send(message);
+        } catch (Exception e) {
 
+            log.error("Failed to send OTP email to user: {}",email,e);
 
-        System.out.println(
-                "OTP EMAIL SENT SUCCESSFULLY"
-        );
-
-        System.out.println(
-                "========== SEND EMAIL OTP END =========="
-        );
+            throw new RuntimeException("Unable to send OTP email",e);
+        }
     }
 
-
     @Override
-    public boolean verifyOtp(
-            String email,
-            String otp) {
+    public boolean verifyOtp(String email,String otp) {
 
-        System.out.println(
-                "========== VERIFY EMAIL OTP START =========="
-        );
+        log.info("OTP verification requested for user: {}",email);
 
-        System.out.println(
-                "EMAIL = " + email
-        );
+        User user=userRepository.findByEmail(email)
+                .orElseThrow(()->{
+                    log.warn("OTP verification attempted for unregistered email: {}",email);
+                    return new RuntimeException("Email not registered");
+                });
 
-        System.out.println(
-                "OTP ENTERED = " + otp
-        );
+        if (user.getEmailOtpHash()==null || user.getEmailOtpExpiry()==null) {
 
-
-        User user =
-                userRepository
-                        .findByEmail(email)
-                        .orElseThrow(
-                                () -> new RuntimeException(
-                                        "Email not registered"
-                                )
-                        );
-
-        System.out.println(
-                "OTP HASH FROM DB = " + user.getEmailOtpHash()
-        );
-
-        System.out.println(
-                "OTP EXPIRY FROM DB = " + user.getEmailOtpExpiry()
-        );
-
-        System.out.println(
-                "CURRENT TIME = " + LocalDateTime.now()
-        );
-
-
-        if (user.getEmailOtpHash() == null ||
-                user.getEmailOtpExpiry() == null) {
-
-            System.out.println(
-                    "OTP NOT FOUND"
-            );
+            log.warn("OTP not available for user: {}",email);
 
             return false;
         }
 
+        if (user.getEmailOtpExpiry().isBefore(LocalDateTime.now())) {
 
-        if (user.getEmailOtpExpiry()
-                .isBefore(LocalDateTime.now())) {
-
-            System.out.println(
-                    "OTP EXPIRED"
-            );
+            log.warn("OTP expired for user: {}",email);
 
             return false;
         }
 
-
-        boolean valid =
-                passwordEncoder.matches(
-                        otp,
-                        user.getEmailOtpHash()
-                );
-
+        boolean valid=passwordEncoder.matches(otp,user.getEmailOtpHash());
 
         if (!valid) {
 
-            System.out.println(
-                    "INVALID OTP"
-            );
+            log.warn("Invalid OTP entered for user: {}",email);
 
             return false;
         }
 
-
-        /*
-         * OTP successfully verified.
-         * OTP ko immediately clear kar rahe hain
-         * so that same OTP dobara use na ho.
-         */
         user.setEmailOtpHash(null);
-
         user.setEmailOtpExpiry(null);
-
         userRepository.save(user);
 
-
-        System.out.println(
-                "EMAIL OTP VERIFIED SUCCESSFULLY"
-        );
-
-        System.out.println(
-                "========== VERIFY EMAIL OTP END =========="
-        );
-
+        log.info("OTP verified successfully for user: {}",email);
 
         return true;
     }
