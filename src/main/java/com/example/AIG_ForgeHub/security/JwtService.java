@@ -16,13 +16,16 @@ public class JwtService {
 
     private final SecretKey secretKey;
     private final Long accessTokenExpirationMs;
-    private final Long recoveryTokenExpirationMs;
+    private final Long refreshTokenExpirationMs;
 
-    public JwtService(@Value("${jwt.secret}") String secret,@Value("${jwt.access-token-expiration-ms}") Long accessTokenExpirationMs,@Value("${jwt.recovery-token-expiration-ms}") Long recoveryTokenExpirationMs) {
+    public JwtService(
+            @Value("${jwt.secret}") String secret,
+            @Value("${jwt.access-token-expiration-ms}") Long accessTokenExpirationMs,
+            @Value("${jwt.refresh-token-expiration-ms}") Long refreshTokenExpirationMs) {
 
         this.secretKey=Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.accessTokenExpirationMs=accessTokenExpirationMs;
-        this.recoveryTokenExpirationMs=recoveryTokenExpirationMs;
+        this.refreshTokenExpirationMs=refreshTokenExpirationMs;
 
         log.info("JwtService initialized successfully");
     }
@@ -61,25 +64,6 @@ public class JwtService {
                 .compact();
 
         log.debug("Refresh token generated for user: {}",email);
-
-        return token;
-    }
-
-    public String generateRecoveryToken(String email,String role) {
-
-        Date now=new Date();
-
-        String token=Jwts.builder()
-                .subject(email)
-                .claim("role",role)
-                .claim("type","recovery")
-                .claim("mfaVerified",false)
-                .issuedAt(now)
-                .expiration(new Date(now.getTime()+recoveryTokenExpirationMs))
-                .signWith(secretKey,Jwts.SIG.HS256)
-                .compact();
-
-        log.debug("Recovery token generated for user: {}",email);
 
         return token;
     }
@@ -124,10 +108,6 @@ public class JwtService {
         return "refresh".equals(getTokenType(token));
     }
 
-    public boolean isRecoveryToken(String token) {
-        return "recovery".equals(getTokenType(token));
-    }
-
     public boolean isTokenValid(String token) {
 
         try {
@@ -139,7 +119,7 @@ public class JwtService {
 
             return true;
 
-        } catch (Exception e) {
+        } catch(Exception e) {
 
             log.warn("JWT validation failed");
 

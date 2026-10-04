@@ -5,14 +5,16 @@ import com.example.AIG_ForgeHub.dto.LoginResponse;
 import com.example.AIG_ForgeHub.dto.VerifyEmailOtpRequest;
 import com.example.AIG_ForgeHub.model.User;
 import com.example.AIG_ForgeHub.repository.UserRepository;
-import com.example.AIG_ForgeHub.security.JwtService;
+import com.example.AIG_ForgeHub.security.CookieUtil;
 import com.example.AIG_ForgeHub.service.AuthService;
 import com.example.AIG_ForgeHub.service.EmailService;
 import com.example.AIG_ForgeHub.service.TwoFactorService;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -26,8 +28,17 @@ public class AuthController {
     private final AuthService authService;
     private final EmailService emailService;
     private final UserRepository userRepository;
-    private final JwtService jwtService;
     private final TwoFactorService twoFactorService;
+    private final CookieUtil cookieUtil;
+
+    @Value("${jwt.access-token-expiration-ms}")
+    private long accessTokenExpirationMs;
+
+    @Value("${jwt.refresh-token-expiration-ms}")
+    private long refreshTokenExpirationMs;
+
+    @Value("${jwt.remember-me-expiration-ms}")
+    private long rememberMeExpirationMs;
 
     @GetMapping("/login")
     public String loginPage() {
@@ -35,7 +46,9 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public String login(@Valid @ModelAttribute LoginRequest loginRequest,Model model) {
+    public String login(
+            @Valid @ModelAttribute LoginRequest loginRequest,
+            Model model) {
 
         log.info("Login attempt for email: {}",loginRequest.getEmail());
 
@@ -43,26 +56,31 @@ public class AuthController {
 
             LoginResponse loginResponse=authService.login(loginRequest);
 
-            log.info("Login credentials verified for email: {}",loginRequest.getEmail());
+            log.info("Password authentication verified for email: {}",loginRequest.getEmail());
 
-            model.addAttribute("accessToken",loginResponse.getAccessToken());
-            model.addAttribute("refreshToken",loginResponse.getRefreshToken());
+            model.addAttribute("email",loginResponse.getEmail());
+            model.addAttribute("rememberMe",loginRequest.isRememberMe());
 
-            if (loginResponse.isFirstTimeLogin()) {
+            if(loginResponse.isFirstTimeLogin()) {
 
                 log.info("First time login detected for email: {}",loginRequest.getEmail());
 
-                model.addAttribute("nextPage","/2fa/qr");
+                String qrCode=twoFactorService.generateQrCode(
+                        loginResponse.getEmail()
+                );
+
+                model.addAttribute("qrCode",qrCode);
+
+                return "show-qr";
+
             } else {
 
-                log.info("Existing user login for email: {}",loginRequest.getEmail());
+                log.info("Existing user requires 2FA verification for email: {}",loginRequest.getEmail());
 
-                model.addAttribute("nextPage","/2fa/proceed");
+                return "verify-otp";
             }
 
-            return "token-handoff";
-
-        } catch (Exception e) {
+        } catch(Exception e) {
 
             log.warn("Login failed for email: {}",loginRequest.getEmail());
 
@@ -73,24 +91,29 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    @ResponseBody
-    public ResponseEntity<String> logout(@RequestHeader(value="X-Refresh-Token",required=false) String refreshToken) {
+    public String logout(
+            @CookieValue(value="refreshToken",required=false) String refreshToken,
+            HttpServletResponse response) {
 
         try {
 
             authService.logout(refreshToken);
 
+            cookieUtil.clearAccessTokenCookie(response);
+            cookieUtil.clearRefreshTokenCookie(response);
+
             log.info("Logout successful");
 
-            return ResponseEntity.ok("Logged out successfully");
+            return "redirect:/auth/login";
 
-        } catch (Exception e) {
+        } catch(Exception e) {
 
             log.error("Logout failed",e);
 
-            return ResponseEntity
-                    .status(500)
-                    .body("Unable to logout. Please try again.");
+            cookieUtil.clearAccessTokenCookie(response);
+            cookieUtil.clearRefreshTokenCookie(response);
+
+            return "redirect:/auth/login";
         }
     }
 
@@ -116,7 +139,7 @@ public class AuthController {
 
             return "verify-email-otp";
 
-        } catch (RuntimeException e) {
+        } catch(RuntimeException e) {
 
             log.warn("Unable to send email OTP for user: {}",email);
 
@@ -124,9 +147,9 @@ public class AuthController {
 
             return "lost-otp";
 
-        } catch (Exception e) {
+        } catch(Exception e) {
 
-            log.error("Unexpected error while sending email OTP for user: {}",email,e);
+            log.error("Unexpected error while sending email OTP to user: {}",email,e);
 
             model.addAttribute("error","Unable to send OTP. Please try again.");
 
@@ -135,7 +158,9 @@ public class AuthController {
     }
 
     @PostMapping("/verify-email-otp")
-    public String verifyEmailOtp(@Valid @ModelAttribute VerifyEmailOtpRequest request,Model model) {
+    public String verifyEmailOtp(
+            @Valid @ModelAttribute VerifyEmailOtpRequest request,
+            Model model) {
 
         log.info("Email OTP verification attempt for user: {}",request.getEmail());
 
@@ -144,7 +169,7 @@ public class AuthController {
                 request.getOtp()
         );
 
-        if (!verified) {
+        if(!verified) {
 
             log.warn("Invalid or expired email OTP for user: {}",request.getEmail());
 
@@ -163,18 +188,13 @@ public class AuthController {
 
         log.info("2FA secret regenerated for user: {}",request.getEmail());
 
-        String recoveryToken=jwtService.generateRecoveryToken(
-                user.getEmail(),
-                user.getRole()
-        );
-
         String qrCode=twoFactorService.generateQrCode(
                 user.getEmail()
         );
 
         model.addAttribute("qrCode",qrCode);
-        model.addAttribute("accessToken",recoveryToken);
-        model.addAttribute("refreshToken","");
+        model.addAttribute("email",user.getEmail());
+        model.addAttribute("rememberMe",false);
 
         log.info("Recovery QR generated successfully for user: {}",request.getEmail());
 
@@ -188,24 +208,36 @@ public class AuthController {
 
     @PostMapping("/refresh")
     @ResponseBody
-    public ResponseEntity<?> refresh(@RequestHeader(value="X-Refresh-Token",required=false) String refreshToken) {
+    public String refresh(
+            @CookieValue(value="refreshToken",required=false) String refreshToken,
+            HttpServletResponse response) {
 
         try {
 
-            LoginResponse response=
+            LoginResponse loginResponse=
                     authService.refreshAccessToken(refreshToken);
+
+            long refreshExpiration=loginResponse.getRefreshToken()!=null
+                    ? refreshTokenExpirationMs
+                    : refreshTokenExpirationMs;
+
+            cookieUtil.addAccessTokenCookie(
+                    response,
+                    loginResponse.getAccessToken(),
+                    accessTokenExpirationMs
+            );
 
             log.info("Access token refreshed successfully");
 
-            return ResponseEntity.ok(response);
+            return "Access token refreshed successfully";
 
-        } catch (Exception e) {
+        } catch(Exception e) {
 
             log.warn("Access token refresh failed");
 
-            return ResponseEntity
-                    .status(401)
-                    .body("Invalid or expired refresh token");
+            cookieUtil.clearAccessTokenCookie(response);
+
+            return "Invalid or expired refresh token";
         }
     }
 }

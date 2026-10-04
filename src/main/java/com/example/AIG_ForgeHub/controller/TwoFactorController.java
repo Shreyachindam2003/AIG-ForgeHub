@@ -2,17 +2,17 @@ package com.example.AIG_ForgeHub.controller;
 
 import com.example.AIG_ForgeHub.dto.LoginResponse;
 import com.example.AIG_ForgeHub.dto.VerifyOtpRequest;
-import com.example.AIG_ForgeHub.security.JwtService;
+import com.example.AIG_ForgeHub.security.CookieUtil;
 import com.example.AIG_ForgeHub.service.AuthService;
 import com.example.AIG_ForgeHub.service.TwoFactorService;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
 
 @Controller
 @RequestMapping("/2fa")
@@ -20,93 +20,53 @@ import java.util.Map;
 @Slf4j
 public class TwoFactorController {
 
-    private final JwtService jwtService;
     private final TwoFactorService twoFactorService;
     private final AuthService authService;
+    private final CookieUtil cookieUtil;
 
-    @GetMapping("/qr")
-    public String qrPage(@RequestHeader(value="Authorization",required=false) String authorizationHeader,@RequestHeader(value="X-Refresh-Token",required=false) String refreshToken,Model model) {
-        log.info("2FA QR page requested");
+    @Value("${jwt.access-token-expiration-ms}")
+    private long accessTokenExpirationMs;
 
-        String token=getTokenFromHeader(authorizationHeader);
+    @Value("${jwt.refresh-token-expiration-ms}")
+    private long refreshTokenExpirationMs;
 
-        if(token==null) {
-            log.warn("2FA QR page rejected because access token is missing");
-            return "redirect:/auth/login";
-        }
+    @Value("${jwt.remember-me-expiration-ms}")
+    private long rememberMeExpirationMs;
+
+    @PostMapping("/proceed")
+    public String proceedToVerify(
+            @RequestParam String email,
+            @RequestParam(defaultValue="false") boolean rememberMe,
+            Model model) {
+
+        log.info("Proceed to 2FA verification requested for user: {}",email);
 
         try {
-            if(!jwtService.isTokenValid(token)) {
-                log.warn("2FA QR page rejected because token is invalid");
-                return "redirect:/auth/login";
-            }
 
-            if(!jwtService.isAccessToken(token) && !jwtService.isRecoveryToken(token)) {
-                log.warn("2FA QR page rejected because token type is invalid");
-                return "redirect:/auth/login";
-            }
+            model.addAttribute("email",email);
+            model.addAttribute("rememberMe",rememberMe);
 
-            String email=jwtService.extractSubject(token);
-
-            log.info("Generating 2FA QR code for user: {}",email);
-
-            String qrCode=twoFactorService.generateQrCode(email);
-
-            model.addAttribute("qrCode",qrCode);
-            model.addAttribute("accessToken",token);
-            model.addAttribute("refreshToken",refreshToken==null ? "" : refreshToken);
-
-            log.info("2FA QR page loaded successfully for user: {}",email);
-
-            return "show-qr";
+            return "verify-otp";
 
         } catch(Exception e) {
-            log.error("Failed to load 2FA QR page",e);
+
+            log.error("Failed to open 2FA verification page",e);
+
             return "redirect:/auth/login";
         }
     }
 
     @PostMapping("/verify")
-    @ResponseBody
-    public Map<String,Object> verifyOtp(@Valid @ModelAttribute VerifyOtpRequest request,@RequestHeader(value="Authorization",required=false) String authorizationHeader,@RequestHeader(value="X-Refresh-Token",required=false) String refreshToken) {
-        log.info("2FA OTP verification request received");
+    public String verifyOtp(
+            @Valid @ModelAttribute VerifyOtpRequest request,
+            @RequestParam String email,
+            @RequestParam(defaultValue="false") boolean rememberMe,
+            HttpServletResponse response,
+            Model model) {
 
-        String token=getTokenFromHeader(authorizationHeader);
-
-        if(token==null) {
-            log.warn("2FA OTP verification rejected because access token is missing");
-
-            return Map.of(
-                    "success",false,
-                    "message","Access token missing"
-            );
-        }
+        log.info("2FA OTP verification request received for user: {}",email);
 
         try {
-            if(!jwtService.isTokenValid(token)) {
-                log.warn("2FA OTP verification rejected because token is invalid");
-
-                return Map.of(
-                        "success",false,
-                        "message","Invalid or expired token"
-                );
-            }
-
-            boolean normalLoginToken=jwtService.isAccessToken(token);
-            boolean recoveryToken=jwtService.isRecoveryToken(token);
-
-            if(!normalLoginToken && !recoveryToken) {
-                log.warn("2FA OTP verification rejected because token type is invalid");
-
-                return Map.of(
-                        "success",false,
-                        "message","Invalid token type"
-                );
-            }
-
-            String email=jwtService.extractSubject(token);
-
-            log.info("Verifying 2FA OTP for user: {}",email);
 
             boolean valid=twoFactorService.verifyOtp(
                     email,
@@ -114,84 +74,55 @@ public class TwoFactorController {
             );
 
             if(!valid) {
+
                 log.warn("Invalid 2FA OTP for user: {}",email);
 
-                return Map.of(
-                        "success",false,
-                        "message","Invalid or expired OTP"
-                );
+                model.addAttribute("email",email);
+                model.addAttribute("rememberMe",rememberMe);
+                model.addAttribute("error","Invalid or expired OTP");
+
+                return "verify-otp";
             }
 
-            LoginResponse finalResponse;
+            LoginResponse finalResponse=
+                    authService.completeTwoFactor(
+                            email,
+                            rememberMe
+                    );
 
-            if(recoveryToken) {
-                log.info("Completing 2FA recovery login for user: {}",email);
-                finalResponse=authService.completeTwoFactor(email,null);
-            } else {
-                log.info("Completing normal 2FA login for user: {}",email);
-                finalResponse=authService.completeTwoFactor(email,refreshToken);
-            }
+            long refreshExpiration=rememberMe
+                    ? rememberMeExpirationMs
+                    : refreshTokenExpirationMs;
 
-            String nextPage;
+            cookieUtil.addAccessTokenCookie(
+                    response,
+                    finalResponse.getAccessToken(),
+                    accessTokenExpirationMs
+            );
 
-            if("ADMIN".equalsIgnoreCase(finalResponse.getRole())) {
-                nextPage="/admin/dashboard";
-            } else {
-                nextPage="/vendor/dashboard";
-            }
+            cookieUtil.addRefreshTokenCookie(
+                    response,
+                    finalResponse.getRefreshToken(),
+                    refreshExpiration
+            );
 
             log.info("2FA verification successful for user: {}",email);
 
-            return Map.of(
-                    "success",true,
-                    "accessToken",finalResponse.getAccessToken(),
-                    "refreshToken",finalResponse.getRefreshToken(),
-                    "nextPage",nextPage
-            );
+            if("ADMIN".equalsIgnoreCase(finalResponse.getRole())) {
+                return "redirect:/admin/dashboard";
+            }
+
+            return "redirect:/vendor/dashboard";
 
         } catch(Exception e) {
-            log.error("2FA OTP verification failed",e);
 
-            return Map.of(
-                    "success",false,
-                    "message","OTP verification failed"
-            );
-        }
-    }
+            log.error("2FA OTP verification failed for user: {}",email,e);
 
-    @PostMapping("/proceed")
-    public String proceedToVerify(@RequestParam String accessToken,@RequestParam(required=false,defaultValue="") String refreshToken,Model model) {
-        log.info("Proceed to 2FA verification requested");
-
-        try {
-            if(!jwtService.isTokenValid(accessToken)) {
-                log.warn("Proceed to 2FA verification rejected because token is invalid");
-                return "redirect:/auth/login";
-            }
-
-            if(!jwtService.isAccessToken(accessToken) && !jwtService.isRecoveryToken(accessToken)) {
-                log.warn("Proceed to 2FA verification rejected because token type is invalid");
-                return "redirect:/auth/login";
-            }
-
-            model.addAttribute("accessToken",accessToken);
-            model.addAttribute("refreshToken",refreshToken);
-
-            log.info("Proceed to 2FA verification successful");
+            model.addAttribute("email",email);
+            model.addAttribute("rememberMe",rememberMe);
+            model.addAttribute("error","OTP verification failed");
 
             return "verify-otp";
-
-        } catch(Exception e) {
-            log.error("Failed to open 2FA verification page",e);
-            return "redirect:/auth/login";
         }
-    }
-
-    private String getTokenFromHeader(String authorizationHeader) {
-        if(authorizationHeader==null || !authorizationHeader.startsWith("Bearer ")) {
-            return null;
-        }
-
-        return authorizationHeader.substring(7);
     }
 }

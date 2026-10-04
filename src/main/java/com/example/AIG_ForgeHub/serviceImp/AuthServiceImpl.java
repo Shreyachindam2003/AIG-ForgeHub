@@ -39,56 +39,39 @@ public class AuthServiceImpl implements AuthService {
                 )
         );
 
-        log.info("User authentication successful: {}",loginRequest.getEmail());
+        log.info("Password authentication successful for user: {}",loginRequest.getEmail());
 
         User user=userRepository.findByEmail(loginRequest.getEmail())
                 .orElseThrow(()->new RuntimeException("User not found"));
 
         boolean firstTimeLogin=Boolean.TRUE.equals(user.getIsFirstTimeLogin());
 
-        String accessToken=jwtService.generateAccessToken(
-                user.getEmail(),
-                user.getRole(),
-                false
-        );
-
-        String refreshToken=refreshTokenService.generateRefreshToken(
-                user.getEmail(),
-                user.getRole(),
-                loginRequest.isRememberMe()
-        );
-
-        log.info("JWT tokens generated for user: {}",user.getEmail());
-
-        if (user.getSecretKey()==null || user.getSecretKey().isBlank()) {
+        if(user.getSecretKey()==null || user.getSecretKey().isBlank()) {
 
             String secretKey=twoFactorService.generateSecretKey();
 
             user.setSecretKey(secretKey);
+
             userRepository.save(user);
 
             log.info("2FA secret generated for user: {}",user.getEmail());
         }
 
-        if (firstTimeLogin) {
-            log.info("First time login user requires 2FA setup: {}",user.getEmail());
-        } else {
-            log.info("Existing user requires 2FA verification: {}",user.getEmail());
-        }
+        log.info("MFA verification required for user: {}",user.getEmail());
 
         return LoginResponse.builder()
                 .userId(user.getUserId())
                 .fullName(user.getFullName())
                 .email(user.getEmail())
                 .role(user.getRole())
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
+                .accessToken(null)
+                .refreshToken(null)
                 .firstTimeLogin(firstTimeLogin)
                 .build();
     }
 
     @Override
-    public LoginResponse completeTwoFactor(String email,String refreshToken) {
+    public LoginResponse completeTwoFactor(String email,boolean rememberMe) {
 
         log.info("Completing 2FA authentication for user: {}",email);
 
@@ -98,16 +81,11 @@ public class AuthServiceImpl implements AuthService {
                         "User not found"
                 ));
 
-        if (refreshToken==null || refreshToken.isBlank()) {
-
-            log.info("Generating new refresh token for user: {}",email);
-
-            refreshToken=refreshTokenService.generateRefreshToken(
-                    user.getEmail(),
-                    user.getRole(),
-                    false
-            );
-        }
+        String refreshToken=refreshTokenService.generateRefreshToken(
+                user.getEmail(),
+                user.getRole(),
+                rememberMe
+        );
 
         String accessToken=jwtService.generateAccessToken(
                 user.getEmail(),
@@ -116,6 +94,7 @@ public class AuthServiceImpl implements AuthService {
         );
 
         user.setIsFirstTimeLogin(false);
+
         userRepository.save(user);
 
         log.info("2FA authentication completed successfully for user: {}",email);

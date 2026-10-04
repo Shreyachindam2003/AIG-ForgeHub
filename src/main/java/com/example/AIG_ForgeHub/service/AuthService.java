@@ -7,7 +7,7 @@ public interface AuthService {
 
     LoginResponse login(LoginRequest loginRequest);
 
-    LoginResponse completeTwoFactor(String email,String refreshToken);
+    LoginResponse completeTwoFactor(String email,boolean rememberMe);
 
     LoginResponse refreshAccessToken(String refreshToken);
 

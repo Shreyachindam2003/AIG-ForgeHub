@@ -10,8 +10,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
-
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -43,13 +41,11 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
                 .orElseThrow(()->new RuntimeException("User not found"));
 
         user.setRefreshTokenHash(token);
-        user.setRefreshTokenExpiry(
-                LocalDateTime.now().plusNanos(expiration*1_000_000)
-        );
+        user.setRefreshTokenRevoked(false);
 
         userRepository.save(user);
 
-        log.info("Refresh token generated and stored for user: {} with rememberMe: {}",email,rememberMe);
+        log.info("New refresh token generated and stored for user: {} with revoked=false",email);
 
         return token;
     }
@@ -57,21 +53,21 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     @Override
     public LoginResponse refreshAccessToken(String refreshToken) {
 
-        if (refreshToken==null || refreshToken.isBlank()) {
+        if(refreshToken==null || refreshToken.isBlank()) {
 
             log.warn("Refresh token missing");
 
             throw new RuntimeException("Refresh token missing");
         }
 
-        if (!jwtService.isTokenValid(refreshToken)) {
+        if(!jwtService.isTokenValid(refreshToken)) {
 
             log.warn("Invalid refresh token received");
 
             throw new RuntimeException("Invalid refresh token");
         }
 
-        if (!jwtService.isRefreshToken(refreshToken)) {
+        if(!jwtService.isRefreshToken(refreshToken)) {
 
             log.warn("Non-refresh token used for token refresh");
 
@@ -84,12 +80,11 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
                     return new RuntimeException("Refresh token not found");
                 });
 
-        if (user.getRefreshTokenExpiry()==null ||
-                user.getRefreshTokenExpiry().isBefore(LocalDateTime.now())) {
+        if(Boolean.TRUE.equals(user.getRefreshTokenRevoked())) {
 
-            log.warn("Refresh token expired for user: {}",user.getEmail());
+            log.warn("Refresh token is revoked for user: {}",user.getEmail());
 
-            throw new RuntimeException("Refresh token expired");
+            throw new RuntimeException("Refresh token revoked");
         }
 
         String newAccessToken=jwtService.generateAccessToken(
@@ -114,7 +109,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     @Override
     public void deleteRefreshToken(String refreshToken) {
 
-        if (refreshToken==null || refreshToken.isBlank()) {
+        if(refreshToken==null || refreshToken.isBlank()) {
 
             log.warn("Logout requested without refresh token");
 
@@ -124,13 +119,13 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
         User user=userRepository.findByRefreshTokenHash(refreshToken)
                 .orElse(null);
 
-        if (user!=null) {
+        if(user!=null) {
 
-            user.setRefreshTokenHash(null);
-            user.setRefreshTokenExpiry(null);
+            user.setRefreshTokenRevoked(true);
+
             userRepository.save(user);
 
-            log.info("Refresh token revoked successfully for user: {}",user.getEmail());
+            log.info("Refresh token marked revoked for user: {}",user.getEmail());
 
         } else {
 

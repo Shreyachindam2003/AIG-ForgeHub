@@ -3,10 +3,8 @@ package com.example.AIG_ForgeHub.model;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
-
 @Entity
-@Table(name = "Users")
+@Table(name="Users")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -15,37 +13,31 @@ import java.time.LocalDateTime;
 public class User {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "UserId")
+    @GeneratedValue(strategy=GenerationType.IDENTITY)
+    @Column(name="UserId")
     private Long userId;
 
-    @Column(name = "FullName")
+    @Column(name="FullName")
     private String fullName;
 
-    @Column(name = "Email")
+    @Column(name="Email")
     private String email;
 
-    @Column(name = "PasswordHash")
+    @Column(name="PasswordHash")
     private String passwordHash;
 
-    @Column(name = "Role")
+    @Column(name="Role")
     private String role;
 
-    @Column(name = "IsFirstTimeLogin")
+    @Column(name="IsFirstTimeLogin")
     private Boolean isFirstTimeLogin;
 
-    @Column(name = "SecretKey")
+    @Column(name="SecretKey")
     private String secretKey;
 
-    @Column(name = "RefreshTokenHash")
+    @Column(name="RefreshTokenHash")
     private String refreshTokenHash;
 
-    @Column(name = "RefreshTokenExpiry")
-    private LocalDateTime refreshTokenExpiry;
-
-    @Column(name = "EmailOtpHash")
-    private String emailOtpHash;
-
-    @Column(name = "EmailOtpExpiry")
-    private LocalDateTime emailOtpExpiry;
+    @Column(name="RefreshTokenRevoked")
+    private Boolean refreshTokenRevoked;
 }

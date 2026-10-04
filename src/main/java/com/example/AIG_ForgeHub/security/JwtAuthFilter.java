@@ -2,6 +2,7 @@ package com.example.AIG_ForgeHub.security;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -21,35 +22,35 @@ import java.util.List;
 @Slf4j
 public class JwtAuthFilter extends OncePerRequestFilter {
 
-    private static final String BEARER_PREFIX="Bearer ";
+    private static final String ACCESS_TOKEN_COOKIE="accessToken";
 
     private final JwtService jwtService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,HttpServletResponse response,FilterChain filterChain) throws ServletException,IOException {
 
-        String token=getToken(request);
+        String token=getAccessTokenFromCookie(request);
 
-        if (token==null || SecurityContextHolder.getContext().getAuthentication()!=null) {
+        if(token==null || SecurityContextHolder.getContext().getAuthentication()!=null) {
             filterChain.doFilter(request,response);
             return;
         }
 
         try {
 
-            if (!jwtService.isTokenValid(token)) {
+            if(!jwtService.isTokenValid(token)) {
                 log.warn("Invalid JWT token for request: {}",request.getRequestURI());
                 filterChain.doFilter(request,response);
                 return;
             }
 
-            if (!jwtService.isAccessToken(token)) {
+            if(!jwtService.isAccessToken(token)) {
                 log.warn("Non-access JWT token used for request: {}",request.getRequestURI());
                 filterChain.doFilter(request,response);
                 return;
             }
 
-            if (!jwtService.isMfaVerified(token)) {
+            if(!jwtService.isMfaVerified(token)) {
                 log.warn("JWT rejected because MFA is not verified for request: {}",request.getRequestURI());
                 filterChain.doFilter(request,response);
                 return;
@@ -58,7 +59,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             String email=jwtService.extractSubject(token);
             String role=jwtService.extractRole(token);
 
-            if (email==null || role==null) {
+            if(email==null || role==null) {
                 log.warn("JWT missing required claims for request: {}",request.getRequestURI());
                 filterChain.doFilter(request,response);
                 return;
@@ -77,7 +78,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
             log.info("JWT authentication successful for user: {} with role: {}",email,role);
 
-        } catch (Exception e) {
+        } catch(Exception e) {
 
             log.error("JWT authentication failed for request: {}",request.getRequestURI(),e);
 
@@ -87,12 +88,19 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         filterChain.doFilter(request,response);
     }
 
-    private String getToken(HttpServletRequest request) {
+    private String getAccessTokenFromCookie(HttpServletRequest request) {
 
-        String header=request.getHeader("Authorization");
+        Cookie[] cookies=request.getCookies();
 
-        if (header!=null && header.startsWith(BEARER_PREFIX)) {
-            return header.substring(BEARER_PREFIX.length());
+        if(cookies==null) {
+            return null;
+        }
+
+        for(Cookie cookie:cookies) {
+
+            if(ACCESS_TOKEN_COOKIE.equals(cookie.getName())) {
+                return cookie.getValue();
+            }
         }
 
         return null;
