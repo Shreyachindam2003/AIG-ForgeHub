@@ -160,9 +160,7 @@ public class AuthController {
 
         log.info("2FA secret regenerated for user: {}",request.getEmail());
 
-        String qrCode=twoFactorService.generateQrCode(
-                user.getEmail()
-        );
+        String qrCode=twoFactorService.generateQrCode(user.getEmail());
 
         model.addAttribute("qrCode",qrCode);
         model.addAttribute("email",user.getEmail());
@@ -185,19 +183,11 @@ public class AuthController {
             HttpServletResponse response) {
 
         try {
-
-            LoginResponse loginResponse=
-                    authService.refreshAccessToken(refreshToken);
-
+            LoginResponse loginResponse= authService.refreshAccessToken(refreshToken);
             long refreshExpiration=loginResponse.getRefreshToken()!=null
-                    ? refreshTokenExpirationMs
-                    : refreshTokenExpirationMs;
+                    ? refreshTokenExpirationMs : refreshTokenExpirationMs;
 
-            cookieUtil.addAccessTokenCookie(
-                    response,
-                    loginResponse.getAccessToken(),
-                    accessTokenExpirationMs
-            );
+            cookieUtil.addAccessTokenCookie(response, loginResponse.getAccessToken(), accessTokenExpirationMs);
 
             log.info("Access token refreshed successfully");
 

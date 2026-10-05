@@ -83,12 +83,9 @@ public class AdminRFQController {
 
     @PostMapping("/item/update")
     @ResponseBody
-    public ResponseEntity<String> updateRFQItem(
-            @ModelAttribute RFQItemUpdateRequest request
-    ) {
+    public ResponseEntity<String> updateRFQItem(@ModelAttribute RFQItemUpdateRequest request) {
 
         rfqService.updateRFQItem(request);
-
         return ResponseEntity.ok("success");
     }
 

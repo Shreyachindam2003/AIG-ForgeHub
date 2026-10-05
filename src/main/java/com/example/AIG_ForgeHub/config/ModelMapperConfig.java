@@ -37,34 +37,6 @@ public class ModelMapperConfig {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         TypeMap<User,UserResponseDto> userMap=
                 modelMapper.createTypeMap(User.class,UserResponseDto.class);
 

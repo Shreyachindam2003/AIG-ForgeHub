@@ -34,9 +34,7 @@ public class TwoFactorController {
     private long rememberMeExpirationMs;
 
     @PostMapping("/proceed")
-    public String proceedToVerify(
-            @RequestParam String email,
-            @RequestParam(defaultValue="false") boolean rememberMe,
+    public String proceedToVerify(@RequestParam String email, @RequestParam(defaultValue="false") boolean rememberMe,
             Model model) {
 
         log.info("Proceed to 2FA verification requested for user: {}",email);
@@ -57,22 +55,14 @@ public class TwoFactorController {
     }
 
     @PostMapping("/verify")
-    public String verifyOtp(
-            @Valid @ModelAttribute VerifyOtpRequest request,
-            @RequestParam String email,
-            @RequestParam(defaultValue="false") boolean rememberMe,
-            HttpServletResponse response,
+    public String verifyOtp(@Valid @ModelAttribute VerifyOtpRequest request, @RequestParam String email,
+            @RequestParam(defaultValue="false") boolean rememberMe, HttpServletResponse response,
             Model model) {
 
         log.info("2FA OTP verification request received for user: {}",email);
 
         try {
-
-            boolean valid=twoFactorService.verifyOtp(
-                    email,
-                    Integer.parseInt(request.getOtp())
-            );
-
+            boolean valid=twoFactorService.verifyOtp(email, Integer.parseInt(request.getOtp()));
             if(!valid) {
 
                 log.warn("Invalid 2FA OTP for user: {}",email);
@@ -84,27 +74,13 @@ public class TwoFactorController {
                 return "verify-otp";
             }
 
-            LoginResponse finalResponse=
-                    authService.completeTwoFactor(
-                            email,
-                            rememberMe
-                    );
+            LoginResponse finalResponse= authService.completeTwoFactor(email, rememberMe);
 
-            long refreshExpiration=rememberMe
-                    ? rememberMeExpirationMs
-                    : refreshTokenExpirationMs;
+            long refreshExpiration=rememberMe ? rememberMeExpirationMs : refreshTokenExpirationMs;
 
-            cookieUtil.addAccessTokenCookie(
-                    response,
-                    finalResponse.getAccessToken(),
-                    accessTokenExpirationMs
-            );
+            cookieUtil.addAccessTokenCookie(response, finalResponse.getAccessToken(), accessTokenExpirationMs);
 
-            cookieUtil.addRefreshTokenCookie(
-                    response,
-                    finalResponse.getRefreshToken(),
-                    refreshExpiration
-            );
+            cookieUtil.addRefreshTokenCookie(response, finalResponse.getRefreshToken(), refreshExpiration);
 
             log.info("2FA verification successful for user: {}",email);
 

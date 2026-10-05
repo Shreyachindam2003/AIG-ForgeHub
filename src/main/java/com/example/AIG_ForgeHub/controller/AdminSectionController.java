@@ -79,57 +79,37 @@ public class AdminSectionController {
     @GetMapping("/vendor-quotation")
     public String vendorQuotation(Model model) {
 
-        model.addAttribute(
-                "quotations",
-                vendorService.getAllVendorQuotations()
-        );
+        model.addAttribute("quotations", vendorService.getAllVendorQuotations());
 
         return "admin/vendor-quotation";
     }
 
     @GetMapping("/vendor-quotation/details/{quotationId}")
     @ResponseBody
-    public ResponseEntity<VendorQuotationResponseDto> vendorQuotationDetails(
-            @PathVariable Long quotationId
-    ) {
-        return ResponseEntity.ok(
-                vendorService.getQuotationForAdmin(quotationId)
-        );
+    public ResponseEntity<VendorQuotationResponseDto> vendorQuotationDetails(@PathVariable Long quotationId) {
+        return ResponseEntity.ok(vendorService.getQuotationForAdmin(quotationId));
     }
 
     @PostMapping("/vendor-quotation/finalize/{quotationId}")
-    public String finalizeVendorQuotation(
-            @PathVariable Long quotationId,
-            RedirectAttributes redirectAttributes
-    ) {
+    public String finalizeVendorQuotation(@PathVariable Long quotationId, RedirectAttributes redirectAttributes) {
 
         try {
             vendorService.finalizeQuotation(quotationId);
 
-            redirectAttributes.addFlashAttribute(
-                    "success",
-                    "Vendor quotation finalized successfully."
-            );
+            redirectAttributes.addFlashAttribute("success", "Vendor quotation finalized successfully.");
 
         } catch(RuntimeException e) {
             log.warn("Request failed: {}",e.getMessage(),e);
 
-            redirectAttributes.addFlashAttribute(
-                    "error",
-                    e.getMessage()
-            );
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
         }
-
         return "redirect:/admin/vendor-quotation";
     }
 
     @GetMapping("/finance-quotation")
     public String financeQuotation(Model model) {
 
-        model.addAttribute(
-                "quotations",
-                vendorService.getAllFinalizedQuotations()
-        );
+        model.addAttribute("quotations", vendorService.getAllFinalizedQuotations());
 
         return "admin/finance-quotation";
     }
@@ -137,15 +117,9 @@ public class AdminSectionController {
     @GetMapping("/users")
     public String users(Model model) {
 
-        model.addAttribute(
-                "userRequest",
-                new UserRequestDto()
-        );
+        model.addAttribute("userRequest", new UserRequestDto());
 
-        model.addAttribute(
-                "users",
-                userService.getAllUsers()
-        );
+        model.addAttribute("users", userService.getAllUsers());
 
         return "admin/users";
     }

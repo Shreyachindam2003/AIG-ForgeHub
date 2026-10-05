@@ -50,11 +50,7 @@ public class RFQ {
     @JoinColumn(name="UserId",nullable=false)
     private User user;
 
-    @OneToMany(
-            mappedBy="rfq",
-            cascade=CascadeType.ALL,
-            orphanRemoval=true
-    )
+    @OneToMany(mappedBy="rfq",cascade=CascadeType.ALL,orphanRemoval=true)
     private List<RFQItem> items=new ArrayList<>();
 
     @Column(name="IsDeleted",nullable=false)

@@ -29,7 +29,7 @@ public class VendorController {
     private final UserRepository userRepository;
 
     @GetMapping({"","/dashboard"})
-    public String dashboard(Authentication authentication,Model model) {
+    public String dashboard(Authentication authentication, Model model) {
         if(authentication==null || !authentication.isAuthenticated()) {
             return "redirect:/auth/login";
         }
@@ -54,19 +54,14 @@ public class VendorController {
     }
 
     @GetMapping("/open-rfq")
-    public String openRfqs(
-            Authentication authentication,
-            @RequestParam Long vendorId,
-            Model model
-    ) {
-
+    public String openRfqs(Authentication authentication, @RequestParam Long vendorId, Model model) {
         if(authentication==null || !authentication.isAuthenticated()) {
             return "redirect:/auth/login";
         }
 
-        boolean vendor=authentication.getAuthorities()
-                .stream()
-                .anyMatch(authority->"ROLE_VENDOR".equals(authority.getAuthority()));
+        boolean vendor=authentication.getAuthorities().stream()
+                .anyMatch(authority->"ROLE_VENDOR"
+                        .equals(authority.getAuthority()));
 
         if(!vendor) {
             return "redirect:/auth/login";
@@ -82,13 +77,8 @@ public class VendorController {
     }
 
     @GetMapping({"/rfq/{rfqId}","/quote/{rfqId}"})
-    public String rfqDetails(
-            @PathVariable Long rfqId,
-            @RequestParam Long vendorId,
-            Model model,
-            RedirectAttributes redirectAttributes
-    ) {
-
+    public String rfqDetails(@PathVariable Long rfqId, @RequestParam Long vendorId,
+                             Model model, RedirectAttributes redirectAttributes) {
         Long id=vendorId;
 
         try {
@@ -104,91 +94,53 @@ public class VendorController {
         } catch(RuntimeException e) {
             log.warn("Request failed: {}",e.getMessage(),e);
 
-            redirectAttributes.addFlashAttribute(
-                    "error",
-                    e.getMessage()
-            );
+            redirectAttributes.addFlashAttribute("error",e.getMessage());
 
             return "redirect:/vendor/open-rfq?vendorId="+id;
         }
     }
 
     @PostMapping("/rfq/{rfqId}/submit")
-    public String submitQuotation(
-            @PathVariable Long rfqId,
-            @RequestParam Long vendorId,
-            @ModelAttribute("quotationRequest") VendorQuotationRequest request,
-            RedirectAttributes redirectAttributes
-    ) {
-
+    public String submitQuotation(@PathVariable Long rfqId, @RequestParam Long vendorId,
+                                  @ModelAttribute("quotationRequest") VendorQuotationRequest request,
+                                  RedirectAttributes redirectAttributes) {
         try {
             vendorService.submitQuotation(rfqId,vendorId,request);
-
-            redirectAttributes.addFlashAttribute(
-                    "success",
-                    "Quotation submitted successfully."
-            );
-
+            redirectAttributes.addFlashAttribute("success","Quotation submitted successfully.");
             return "redirect:/vendor/my-submission?vendorId="+vendorId;
 
         } catch(RuntimeException e) {
             log.warn("Request failed: {}",e.getMessage(),e);
 
-            redirectAttributes.addFlashAttribute(
-                    "error",
-                    e.getMessage()
-            );
-
+            redirectAttributes.addFlashAttribute("error",e.getMessage());
             return "redirect:/vendor/rfq/"+rfqId+"?vendorId="+vendorId;
         }
     }
 
     @GetMapping("/my-submission")
-    public String mySubmissions(
-            @RequestParam Long vendorId,
-            Model model
-    ) {
-
+    public String mySubmissions(@RequestParam Long vendorId, Model model) {
         Long id=vendorId;
-
         UserResponseDto vendor=vendorService.getVendor(id);
 
-        List<VendorQuotationResponseDto> submissionResponses=
-                new ArrayList<>(vendorService.getMySubmissions(id));
+        List<VendorQuotationResponseDto> submissionResponses=new ArrayList<>(vendorService.getMySubmissions(id));
 
-        List<FinalizedQuotationResponseDto> finalizedQuotations=
-                vendorService.getFinalizedQuotations(id);
+        List<FinalizedQuotationResponseDto> finalizedQuotations=vendorService.getFinalizedQuotations(id);
 
         Map<Long,java.time.LocalDateTime> finalizedDates=new HashMap<>();
 
         for(FinalizedQuotationResponseDto finalized:finalizedQuotations) {
-
             Long quotationId=finalized.getQuotationId();
 
             if(quotationId!=null) {
-
-                finalizedDates.put(
-                        quotationId,
-                        finalized.getFinalizedDate()
-                );
+                finalizedDates.put(quotationId,finalized.getFinalizedDate());
 
                 for(VendorQuotationResponseDto submission:submissionResponses) {
-
                     if(quotationId.equals(submission.getQuotationId())) {
-
                         if(submission.getHistory()!=null) {
-
-                            submission.getHistory().add(
-                                    new VendorQuotationHistory(
-                                            "Quotation Finalized",
-                                            "FINAL",
-                                            submission.getQuotedAmount(),
-                                            finalized.getFinalizedDate(),
-                                            "FINALIZED"
-                                    )
-                            );
+                            submission.getHistory().add(new VendorQuotationHistory("Quotation Finalized",
+                                    "FINAL",submission.getQuotedAmount(),finalized
+                                    .getFinalizedDate(),"FINALIZED"));
                         }
-
                         break;
                     }
                 }
@@ -204,24 +156,14 @@ public class VendorController {
     }
 
     @GetMapping("/submission/{quotationId}")
-    public String submissionDetails(
-            @PathVariable Long quotationId,
-            @RequestParam Long vendorId,
-            Model model,
-            RedirectAttributes redirectAttributes
-    ) {
-
+    public String submissionDetails(@PathVariable Long quotationId,   @RequestParam Long vendorId, Model model,
+                                    RedirectAttributes redirectAttributes) {
         Long id=vendorId;
 
         try {
-            VendorQuotationResponseDto quotation=
-                    vendorService.getMySubmission(quotationId,id);
+            VendorQuotationResponseDto quotation=vendorService.getMySubmission(quotationId,id);
 
-            model.addAttribute(
-                    "vendor",
-                    vendorService.getVendor(id)
-            );
-
+            model.addAttribute("vendor",vendorService.getVendor(id));
             model.addAttribute("quotation",quotation);
             model.addAttribute("vendorId",id);
 
@@ -230,29 +172,19 @@ public class VendorController {
             return "vendor/submission-details";
 
         } catch(RuntimeException e) {
-
             log.warn("Request failed: {}",e.getMessage(),e);
 
-            redirectAttributes.addFlashAttribute(
-                    "error",
-                    e.getMessage()
-            );
+            redirectAttributes.addFlashAttribute("error",e.getMessage());
 
             return "redirect:/vendor/my-submission?vendorId="+id;
         }
     }
 
-    private void addStoredQuotationDetails(
-            Model model,
-            VendorQuotationResponseDto quotation
-    ) {
-
+    private void addStoredQuotationDetails(Model model, VendorQuotationResponseDto quotation) {
         List<Map<String,Object>> quotationItems=new ArrayList<>();
 
         if(quotation.getItems()!=null) {
-
             quotation.getItems().forEach(item->{
-
                 Map<String,Object> row=new java.util.LinkedHashMap<>();
 
                 row.put("itemId",item.getItemId());
@@ -262,12 +194,7 @@ public class VendorController {
                 row.put("uom",item.getUom());
                 row.put("unitPrice",item.getUnitPrice());
 
-                row.put(
-                        "subtotal",
-                        item.getItemSubtotal()!=null
-                                ? item.getItemSubtotal()
-                                : item.getSubtotal()
-                );
+                row.put("subtotal",item.getItemSubtotal()!=null ? item.getItemSubtotal() : item.getSubtotal());
 
                 quotationItems.add(row);
             });
@@ -275,45 +202,23 @@ public class VendorController {
 
         model.addAttribute("quotationItems",quotationItems);
 
-        model.addAttribute(
-                "quotationSubtotal",
-                quotation.getSubtotal()==null
-                        ? BigDecimal.ZERO
-                        : quotation.getSubtotal()
-        );
+        model.addAttribute("quotationSubtotal",quotation.getSubtotal()==null ?
+                BigDecimal.ZERO : quotation.getSubtotal());
 
-        model.addAttribute(
-                "quotationGstAmount",
-                quotation.getGstAmount()==null
-                        ? BigDecimal.ZERO
-                        : quotation.getGstAmount()
-        );
+        model.addAttribute("quotationGstAmount",quotation.getGstAmount()==null ?
+                BigDecimal.ZERO : quotation.getGstAmount());
 
-        model.addAttribute(
-                "quotationGrandTotal",
-                quotation.getGrandTotal()==null
-                        ? BigDecimal.ZERO
-                        : quotation.getGrandTotal()
-        );
+        model.addAttribute("quotationGrandTotal",quotation.getGrandTotal()==null ?
+                BigDecimal.ZERO : quotation.getGrandTotal());
     }
 
     @GetMapping("/finalized-quotation")
-    public String finalizedQuotations(
-            @RequestParam Long vendorId,
-            Model model
-    ) {
-
+    public String finalizedQuotations(@RequestParam Long vendorId, Model model) {
         Long id=vendorId;
 
-        model.addAttribute(
-                "vendor",
-                vendorService.getVendor(id)
-        );
+        model.addAttribute("vendor",vendorService.getVendor(id));
 
-        model.addAttribute(
-                "finalizedQuotations",
-                vendorService.getFinalizedQuotations(id)
-        );
+        model.addAttribute("finalizedQuotations",vendorService.getFinalizedQuotations(id));
 
         model.addAttribute("vendorId",id);
 

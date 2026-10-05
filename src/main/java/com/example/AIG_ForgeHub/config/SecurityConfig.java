@@ -28,14 +28,8 @@ public class SecurityConfig {
         httpSecurity.csrf(csrf->csrf.disable());
 
         httpSecurity.authorizeHttpRequests(request->request
-                .requestMatchers(
-                        "/",
-                        "/auth/**",
-                        "/2fa/**",
-                        "/css/**",
-                        "/js/**",
-                        "/images/**"
-                ).permitAll()
+                .requestMatchers("/", "/auth/**", "/2fa/**", "/css/**", "/js/**", "/images/**")
+                .permitAll()
                 .requestMatchers("/admin/dashboard").hasRole("ADMIN")
                 .requestMatchers("/vendor/dashboard").hasRole("VENDOR")
                 .requestMatchers("/admin/**").hasRole("ADMIN")
@@ -70,8 +64,7 @@ public class SecurityConfig {
             PasswordEncoder passwordEncoder
     ) {
 
-        DaoAuthenticationProvider daoAuthenticationProvider=
-                new DaoAuthenticationProvider(customUserDetailsService);
+        DaoAuthenticationProvider daoAuthenticationProvider=new DaoAuthenticationProvider(customUserDetailsService);
 
         daoAuthenticationProvider.setPasswordEncoder(passwordEncoder);
 
