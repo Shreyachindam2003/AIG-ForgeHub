@@ -1,7 +1,7 @@
 package com.example.AIG_ForgeHub.config;
 
 import com.example.AIG_ForgeHub.security.JwtAuthFilter;
-import com.example.AIG_ForgeHub.serviceImp.CustomUserDetailsService;
+import com.example.AIG_ForgeHub.serviceImpl.CustomUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -22,7 +22,8 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(
             HttpSecurity httpSecurity,
             JwtAuthFilter jwtAuthFilter,
-            AuthenticationEntryPoint authenticationEntryPoint) {
+            AuthenticationEntryPoint authenticationEntryPoint
+    ) {
 
         httpSecurity.csrf(csrf->csrf.disable());
 
@@ -35,25 +36,19 @@ public class SecurityConfig {
                         "/js/**",
                         "/images/**"
                 ).permitAll()
-                .requestMatchers(
-                        "/admin/dashboard",
-                        "/vendor/dashboard"
-                ).permitAll()
+                .requestMatchers("/admin/dashboard").hasRole("ADMIN")
+                .requestMatchers("/vendor/dashboard").hasRole("VENDOR")
                 .requestMatchers("/admin/**").hasRole("ADMIN")
                 .requestMatchers("/vendor/**").hasRole("VENDOR")
                 .anyRequest().authenticated()
         );
 
         httpSecurity.sessionManagement(session->
-                session.sessionCreationPolicy(
-                        SessionCreationPolicy.STATELESS
-                )
+                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
         );
 
         httpSecurity.exceptionHandling(exception->
-                exception.authenticationEntryPoint(
-                        authenticationEntryPoint
-                )
+                exception.authenticationEntryPoint(authenticationEntryPoint)
         );
 
         httpSecurity.addFilterBefore(
@@ -72,7 +67,8 @@ public class SecurityConfig {
     @Bean
     public AuthenticationManager authenticationManager(
             CustomUserDetailsService customUserDetailsService,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder
+    ) {
 
         DaoAuthenticationProvider daoAuthenticationProvider=
                 new DaoAuthenticationProvider(customUserDetailsService);

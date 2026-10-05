@@ -1,7 +1,7 @@
 package com.example.AIG_ForgeHub.controller;
 
-import com.example.AIG_ForgeHub.dto.LoginResponse;
-import com.example.AIG_ForgeHub.dto.VerifyOtpRequest;
+import com.example.AIG_ForgeHub.dto.authDto.LoginResponse;
+import com.example.AIG_ForgeHub.dto.authDto.VerifyOtpRequest;
 import com.example.AIG_ForgeHub.security.CookieUtil;
 import com.example.AIG_ForgeHub.service.AuthService;
 import com.example.AIG_ForgeHub.service.TwoFactorService;

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<body>
+
+<aside th:fragment="sidebar" class="admin-sidebar">
+
+
+    <div class="sidebar-brand">
+
+        <div class="brand-mark">
+            F
+        </div>
+
+        <div>
+
+            <div class="brand-name">
+                ForgeHub
+            </div>
+
+            <div class="brand-role">
+                VENDOR PANEL
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <nav class="sidebar-nav">
+
+        <div class="sidebar-label">
+            PROCUREMENT
+        </div>
+
+
+        <a th:href="@{/vendor/open-rfq(vendorId=${vendorId})}"
+           class="sidebar-link">
+
+            <i class="bi bi-file-earmark-text"></i>
+
+            <span>
+            Open RFQ
+        </span>
+
+        </a>
+
+
+        <a th:href="@{/vendor/my-submission(vendorId=${vendorId})}"
+           class="sidebar-link">
+
+            <i class="bi bi-send"></i>
+
+            <span>
+            My Submission
+        </span>
+
+        </a>
+
+
+        <a th:href="@{/vendor/finalized-quotation(vendorId=${vendorId})}"
+           class="sidebar-link">
+
+            <i class="bi bi-check2-square"></i>
+
+            <span>
+            Finalized Quotation
+        </span>
+
+        </a>
+
+    </nav>
+
+
+    <div class="sidebar-footer">
+
+        <div class="admin-avatar">
+            V
+        </div>
+
+        <div>
+
+            <div
+                    class="footer-name"
+                    th:text="${vendor.fullName}">
+                Vendor
+            </div>
+
+            <div class="footer-role">
+                Vendor Panel
+            </div>
+
+        </div>
+
+    </div>
+
+
+</aside>
+
+</body>
+
+</html>

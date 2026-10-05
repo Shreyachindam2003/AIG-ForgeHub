@@ -1,6 +1,6 @@
 package com.example.AIG_ForgeHub.service;
 
-import com.example.AIG_ForgeHub.dto.LoginResponse;
+import com.example.AIG_ForgeHub.dto.authDto.LoginResponse;
 
 public interface RefreshTokenService {
 

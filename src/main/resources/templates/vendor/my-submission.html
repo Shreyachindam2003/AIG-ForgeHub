@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0">
+
+    <title>My Submission - ForgeHub</title>
+
+
+    <!-- Bootstrap 5 -->
+
+    <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+            rel="stylesheet">
+
+
+    <!-- Bootstrap Icons -->
+
+    <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+            rel="stylesheet">
+
+
+    <!-- DataTables Bootstrap 5 -->
+
+    <link
+            href="https://cdn.datatables.net/2.1.8/css/dataTables.bootstrap5.min.css"
+            rel="stylesheet">
+
+
+    <link
+            rel="stylesheet"
+            th:href="@{/css/admin.css}">
+
+</head>
+
+
+<body>
+
+
+<!-- Vendor Sidebar -->
+
+<div th:replace="~{fragments/vendor-sidebar :: sidebar}"></div>
+
+
+<main class="admin-content">
+
+    <div class="container-fluid p-0">
+
+
+        <!-- =========================
+             SUCCESS / ERROR
+        ========================== -->
+
+        <div
+                th:if="${success}"
+                class="alert alert-success alert-dismissible fade show"
+                role="alert">
+
+            <i class="bi bi-check-circle me-2"></i>
+
+            <span th:text="${success}">
+                Success
+            </span>
+
+            <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="alert">
+            </button>
+
+        </div>
+
+
+        <div
+                th:if="${error}"
+                class="alert alert-danger alert-dismissible fade show"
+                role="alert">
+
+            <i class="bi bi-exclamation-triangle me-2"></i>
+
+            <span th:text="${error}">
+                Error
+            </span>
+
+            <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="alert">
+            </button>
+
+        </div>
+
+
+        <!-- =========================
+             PAGE HEADER
+        ========================== -->
+
+        <div class="mb-4">
+
+            <h2 class="fw-bold mb-1">
+                My Submission
+            </h2>
+
+            <p class="text-muted mb-0">
+
+                Quotations submitted by
+
+                <strong th:text="${vendor.fullName}">
+                    Vendor
+                </strong>
+
+            </p>
+
+        </div>
+
+
+        <!-- =========================
+             SUBMISSION TABLE
+        ========================== -->
+
+        <div class="card border-0 shadow-sm">
+
+            <div class="card-body p-0">
+
+
+                <!-- NO SUBMISSION -->
+
+                <div
+                        th:if="${#lists.isEmpty(submissions)}"
+                        class="text-center py-5">
+
+                    <i class="bi bi-send fs-1 text-muted"></i>
+
+                    <h5 class="mt-3">
+                        No submissions yet
+                    </h5>
+
+                    <p class="text-muted mb-0">
+                        Your submitted quotations will appear here.
+                    </p>
+
+                </div>
+
+
+                <!-- SUBMISSION TABLE -->
+
+                <div
+                        th:unless="${#lists.isEmpty(submissions)}"
+                        class="table-responsive">
+
+                    <table
+                            id="submissionTable"
+                            class="table table-hover align-middle mb-0 w-100">
+
+                        <thead class="table-light">
+
+                        <tr>
+
+                            <th>Bid No</th>
+
+                            <th>RFQ No</th>
+
+                            <th>Quoted Amount</th>
+
+                            <th>Delivery Date</th>
+
+                            <th>Submitted Date</th>
+
+                            <th>Status</th>
+
+                            <th class="text-center">
+                                History
+                            </th>
+
+                            <th class="text-center">
+                                Action
+                            </th>
+
+                        </tr>
+
+                        </thead>
+
+
+                        <tbody>
+
+                        <tr
+                                th:each="submission : ${submissions}">
+
+
+                            <!-- BID NO -->
+
+                            <td class="fw-semibold">
+
+                                <span
+                                        th:text="${submission.bidNo}">
+                                    BID
+                                </span>
+
+                            </td>
+
+
+                            <!-- RFQ NO -->
+
+                            <td>
+
+                                <span
+                                        class="fw-semibold text-primary"
+                                        th:text="${submission.rfqNo}">
+                                    RFQ
+                                </span>
+
+                            </td>
+
+
+                            <!-- QUOTED AMOUNT -->
+
+                            <td>
+
+                                <span class="fw-semibold">
+
+                                    ₹
+
+                                    <span
+                                            th:text="${#numbers.formatDecimal(
+                                                submission.quotedAmount,
+                                                1,
+                                                2
+                                            )}">
+                                        0.00
+                                    </span>
+
+                                </span>
+
+                            </td>
+
+
+                            <!-- DELIVERY DATE -->
+
+                            <td>
+
+                                <span
+                                        th:if="${submission.deliveryDate != null}"
+                                        th:text="${#temporals.format(
+                                            submission.deliveryDate,
+                                            'dd-MM-yyyy'
+                                        )}">
+                                </span>
+
+                                <span
+                                        th:unless="${submission.deliveryDate != null}">
+                                    -
+                                </span>
+
+                            </td>
+
+
+                            <!-- SUBMITTED DATE -->
+
+                            <td>
+
+                                <span
+                                        th:if="${submission.submittedDate != null}"
+                                        th:text="${#temporals.format(
+                                            submission.submittedDate,
+                                            'dd-MM-yyyy HH:mm'
+                                        )}">
+                                </span>
+
+                                <span
+                                        th:unless="${submission.submittedDate != null}">
+                                    -
+                                </span>
+
+                            </td>
+
+
+                            <!-- STATUS -->
+
+                            <td>
+
+                                <span
+                                        th:if="${submission.status == 'FINALIZED'}"
+                                        class="badge text-bg-success">
+
+    <i class="bi bi-check-circle me-1"></i>
+    FINALIZED
+
+</span>
+
+                                <span
+                                        th:if="${submission.status == 'REJECTED'}"
+                                        class="badge text-bg-danger">
+
+    <i class="bi bi-x-circle me-1"></i>
+    REJECTED
+
+</span>
+
+                                <span
+                                        th:if="${submission.status != 'FINALIZED'
+                and submission.status != 'REJECTED'}"
+                                        class="badge text-bg-primary"
+                                        th:text="${submission.status}">
+
+    SUBMITTED
+
+</span>
+
+                            </td>
+
+
+                            <!-- HISTORY -->
+
+                            <td class="text-center">
+
+                                <button
+                                        type="button"
+                                        class="btn btn-sm btn-outline-secondary"
+                                        data-bs-toggle="modal"
+                                        th:attr="data-bs-target='#historyModal-' + ${submission.quotationId}">
+
+                                    <i class="bi bi-clock-history me-1"></i>
+
+                                    History
+
+                                </button>
+
+                            </td>
+
+
+                            <!-- VIEW -->
+
+                            <td class="text-center">
+
+                                <a
+                                        class="btn btn-sm btn-outline-primary"
+                                        th:href="@{/vendor/submission/{id}(
+                                            id=${submission.quotationId},
+                                            vendorId=${vendorId}
+                                        )}">
+
+                                    <i class="bi bi-eye me-1"></i>
+
+                                    View
+
+                                </a>
+
+                            </td>
+
+                        </tr>
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</main>
+
+
+<!-- =====================================================
+     HISTORY MODALS
+====================================================== -->
+
+<div
+        th:each="submission : ${submissions}"
+        class="modal fade"
+        th:id="'historyModal-' + ${submission.quotationId}"
+        tabindex="-1"
+        aria-hidden="true">
+
+    <div class="modal-dialog modal-dialog-centered">
+
+        <div class="modal-content">
+
+
+            <!-- HEADER -->
+
+            <div class="modal-header">
+
+                <h5 class="modal-title">
+
+                    <i class="bi bi-clock-history me-2"></i>
+
+                    Quotation History
+
+                </h5>
+
+                <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal">
+                </button>
+
+            </div>
+
+
+            <!-- BODY -->
+
+            <div class="modal-body">
+
+
+                <!-- RFQ INFORMATION -->
+
+                <div class="mb-3">
+
+                    <div class="text-muted small">
+                        RFQ No
+                    </div>
+
+                    <div
+                            class="fw-semibold"
+                            th:text="${submission.rfqNo}">
+                        RFQ
+                    </div>
+
+                </div>
+
+
+                <!-- BID INFORMATION -->
+
+                <div class="mb-4">
+
+                    <div class="text-muted small">
+                        Bid No
+                    </div>
+
+                    <div
+                            class="fw-semibold"
+                            th:text="${submission.bidNo}">
+                        BID
+                    </div>
+
+                </div>
+
+
+                <!-- TIMELINE -->
+
+                <div class="border-start border-3 ps-3">
+
+
+                    <!-- SUBMITTED -->
+
+                    <div class="mb-4">
+
+                        <div class="d-flex align-items-center gap-2">
+
+                            <span class="badge text-bg-primary">
+                                SUBMITTED
+                            </span>
+
+                        </div>
+
+                        <div class="small text-muted mt-1">
+
+                            <span
+                                    th:if="${submission.submittedDate != null}"
+                                    th:text="${#temporals.format(
+                                        submission.submittedDate,
+                                        'dd-MM-yyyy HH:mm'
+                                    )}">
+                            </span>
+
+                        </div>
+
+                        <div class="small mt-1">
+
+                            Vendor submitted quotation.
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- CURRENT STATUS -->
+
+                    <div class="mb-4">
+
+                        <div>
+
+                            <!-- FINALIZED -->
+                            <span
+                                    th:if="${submission.status == 'FINALIZED'}"
+                                    class="badge text-bg-success">
+
+            <i class="bi bi-check-circle me-1"></i>
+            FINALIZED
+
+        </span>
+
+                            <!-- REJECTED -->
+                            <span
+                                    th:if="${submission.status == 'REJECTED'}"
+                                    class="badge text-bg-danger">
+
+            <i class="bi bi-x-circle me-1"></i>
+            REJECTED
+
+        </span>
+
+                            <!-- SUBMITTED / OTHER STATUS -->
+                            <span
+                                    th:if="${submission.status != 'FINALIZED'
+                        and submission.status != 'REJECTED'}"
+                                    class="badge text-bg-secondary"
+                                    th:text="${submission.status}">
+
+            STATUS
+
+        </span>
+
+                        </div>
+
+                        <!-- Rejected message -->
+                        <div
+                                class="small mt-1"
+                                th:if="${submission.status == 'REJECTED'}">
+
+                            Admin finalized another vendor's quotation for this RFQ.
+
+                        </div>
+
+                        <!-- Other status message -->
+                        <div
+                                class="small mt-1"
+                                th:if="${submission.status != 'REJECTED'}">
+
+                            Current quotation status.
+
+                        </div>
+
+                    </div>
+                    <!-- FINALIZED -->
+
+                    <div
+                            th:if="${finalizedDates[submission.quotationId] != null}"
+                            class="mb-2">
+
+                        <div>
+
+                            <span class="badge text-bg-success">
+
+                                <i class="bi bi-check-circle me-1"></i>
+
+                                FINALIZED
+
+                            </span>
+
+                        </div>
+
+                        <div class="small text-muted mt-1">
+
+                            <span
+                                    th:text="${#temporals.format(
+                                        finalizedDates[submission.quotationId],
+                                        'dd-MM-yyyy HH:mm'
+                                    )}">
+                            </span>
+
+                        </div>
+
+                        <div class="small mt-1">
+
+                            Admin finalized this quotation.
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- FOOTER -->
+
+            <div class="modal-footer">
+
+                <a
+                        class="btn btn-primary"
+                        th:href="@{/vendor/submission/{id}(
+                            id=${submission.quotationId},
+                            vendorId=${vendorId}
+                        )}">
+
+                    <i class="bi bi-eye me-1"></i>
+
+                    View Quotation
+
+                </a>
+
+                <button
+                        type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal">
+
+                    Close
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =========================
+     JQUERY
+========================== -->
+
+<script
+        src="https://code.jquery.com/jquery-3.7.1.min.js">
+</script>
+
+
+<!-- =========================
+     BOOTSTRAP
+========================== -->
+
+<script
+        src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js">
+</script>
+
+
+<!-- =========================
+     DATATABLES
+========================== -->
+
+<script
+        src="https://cdn.datatables.net/2.1.8/js/dataTables.min.js">
+</script>
+
+<script
+        src="https://cdn.datatables.net/2.1.8/js/dataTables.bootstrap5.min.js">
+</script>
+
+
+<!-- =========================
+     DATATABLE INITIALIZATION
+========================== -->
+
+<script th:inline="none">
+
+    $(document).ready(function () {
+
+        $('#submissionTable').DataTable({
+
+            pageLength: 5,
+
+            lengthMenu: [
+                [5, 10, 25, 50, -1],
+                [5, 10, 25, 50, "All"]
+            ],
+
+            ordering: true,
+
+            searching: true,
+
+            paging: true,
+
+            info: true,
+
+            autoWidth: false,
+
+            order: [[4, 'desc']],
+
+            language: {
+
+                search: "",
+
+                searchPlaceholder: "Search submissions...",
+
+                lengthMenu: "Show _MENU_ entries",
+
+                info: "Showing _START_ to _END_ of _TOTAL_ entries",
+
+                infoEmpty: "Showing 0 to 0 of 0 entries",
+
+                infoFiltered: "(filtered from _MAX_ total entries)",
+
+                zeroRecords: "No matching submissions found",
+
+                paginate: {
+
+                    previous: "Previous",
+
+                    next: "Next"
+
+                }
+
+            }
+
+        });
+
+    });
+
+</script>
+
+
+</body>
+
+</html>

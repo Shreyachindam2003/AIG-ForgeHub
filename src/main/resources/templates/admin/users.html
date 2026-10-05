@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head>
+
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Users - ForgeHub</title>
+
+    <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+            rel="stylesheet">
+
+    <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+            rel="stylesheet">
+
+    <link
+            rel="stylesheet"
+            th:href="@{/css/admin.css}">
+
+    <style>
+
+        .page-title {
+            font-size: 25px;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .page-subtitle {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .user-card {
+            border: 0;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(15, 23, 42, 0.06);
+        }
+
+        .user-card .card-body {
+            padding: 24px;
+        }
+
+        .form-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .form-control,
+        .form-select {
+            min-height: 44px;
+            border-radius: 7px;
+            border: 1px solid #d1d5db;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 0.15rem rgba(37, 99, 235, 0.12);
+        }
+
+        .vendor-role {
+            background-color: #f3f4f6;
+            cursor: not-allowed;
+        }
+
+        .users-table {
+            margin-bottom: 0;
+        }
+
+        .users-table thead th {
+            background: #f8fafc;
+            color: #475569;
+            font-size: 12px;
+            font-weight: 700;
+            white-space: nowrap;
+            padding: 14px 16px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .users-table tbody td {
+            font-size: 13px;
+            vertical-align: middle;
+            padding: 14px 16px;
+            border-bottom: 1px solid #eef2f7;
+        }
+
+        .users-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .vendor-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 8px;
+            background: #dbeafe;
+            color: #2563eb;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .configured-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 8px;
+            background: #dcfce7;
+            color: #15803d;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .not-configured-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 8px;
+            background: #6b7280;
+            color: white;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .empty-state {
+            padding: 40px 20px;
+            text-align: center;
+            color: #6b7280;
+        }
+
+        .empty-state i {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        @media (max-width: 991px) {
+
+            .admin-content {
+                margin-left: 0 !important;
+            }
+
+        }
+
+    </style>
+
+
+</head>
+
+<body>
+
+<div th:replace="~{fragments/admin-sidebar :: sidebar}"></div>
+
+<main class="admin-content">
+
+
+    <div class="container-fluid p-4">
+
+        <div class="mb-4">
+
+            <div class="text-uppercase text-muted small fw-semibold">
+                Administration
+            </div>
+
+            <h1 class="page-title mb-1">
+                Users
+            </h1>
+
+            <div class="page-subtitle">
+                Manage vendor accounts and 2FA configuration.
+            </div>
+
+        </div>
+
+
+        <div
+                th:if="${param.success}"
+                class="alert alert-success alert-dismissible fade show"
+                role="alert">
+
+            <i class="bi bi-check-circle me-2"></i>
+
+            Vendor user created successfully.
+
+            <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="alert">
+            </button>
+
+        </div>
+
+
+        <div
+                th:if="${error}"
+                class="alert alert-danger alert-dismissible fade show"
+                role="alert">
+
+            <i class="bi bi-exclamation-triangle me-2"></i>
+
+            <span th:text="${error}">
+            Something went wrong.
+        </span>
+
+            <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="alert">
+            </button>
+
+        </div>
+
+
+        <div class="row g-4">
+
+
+            <div class="col-xl-5 col-lg-5">
+
+                <div class="card user-card h-100">
+
+                    <div class="card-body">
+
+                        <div class="mb-4">
+
+                            <h4 class="fw-semibold mb-1">
+                                Add User
+                            </h4>
+
+                            <p class="text-muted mb-0">
+                                Create a vendor account. The vendor will
+                                configure Google Authenticator on first login.
+                            </p>
+
+                        </div>
+
+
+                        <form
+                                th:action="@{/admin/users/create}"
+                                th:object="${userRequest}"
+                                method="post">
+
+
+                            <div class="mb-3">
+
+                                <label class="form-label">
+
+                                    Full Name
+
+                                    <span class="text-danger">
+                                    *
+                                </span>
+
+                                </label>
+
+                                <input
+                                        type="text"
+                                        class="form-control"
+                                        th:field="*{fullName}"
+                                        placeholder="Enter full name"
+                                        required>
+
+                                <div
+                                        class="text-danger small mt-1"
+                                        th:if="${#fields.hasErrors('fullName')}"
+                                        th:errors="*{fullName}">
+                                </div>
+
+                            </div>
+
+
+                            <div class="mb-3">
+
+                                <label class="form-label">
+
+                                    Email
+
+                                    <span class="text-danger">
+                                    *
+                                </span>
+
+                                </label>
+
+                                <input
+                                        type="email"
+                                        class="form-control"
+                                        th:field="*{email}"
+                                        placeholder="Enter email address"
+                                        required>
+
+                                <div
+                                        class="text-danger small mt-1"
+                                        th:if="${#fields.hasErrors('email')}"
+                                        th:errors="*{email}">
+                                </div>
+
+                            </div>
+
+
+                            <div class="mb-3">
+
+                                <label class="form-label">
+
+                                    Temporary Password
+
+                                    <span class="text-danger">
+                                    *
+                                </span>
+
+                                </label>
+
+                                <input
+                                        type="password"
+                                        class="form-control"
+                                        th:field="*{password}"
+                                        placeholder="Enter temporary password"
+                                        required>
+
+                                <div
+                                        class="text-danger small mt-1"
+                                        th:if="${#fields.hasErrors('password')}"
+                                        th:errors="*{password}">
+                                </div>
+
+                            </div>
+
+
+                            <div class="mb-4">
+
+                                <label class="form-label">
+
+                                    Role
+
+                                    <span class="text-danger">
+                                    *
+                                </span>
+
+                                </label>
+
+                                <select
+                                        class="form-select vendor-role"
+                                        disabled>
+
+                                    <option selected>
+                                        VENDOR
+                                    </option>
+
+                                </select>
+
+                                <div class="form-text">
+                                    Admin can create vendor accounts only.
+                                </div>
+
+                            </div>
+
+
+                            <button
+                                    type="submit"
+                                    class="btn btn-primary w-100">
+
+                                <i class="bi bi-person-plus me-2"></i>
+
+                                Create User
+
+                            </button>
+
+                        </form>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="col-xl-7 col-lg-7">
+
+                <div class="card user-card">
+
+                    <div class="card-body p-0">
+
+                        <div class="table-responsive">
+
+                            <table
+                                    class="table table-hover align-middle users-table">
+
+                                <thead>
+
+                                <tr>
+
+                                    <th class="px-3">
+                                        ID
+                                    </th>
+
+                                    <th>
+                                        Name
+                                    </th>
+
+                                    <th>
+                                        Email
+                                    </th>
+
+                                    <th>
+                                        Role
+                                    </th>
+
+                                    <th>
+                                        2FA
+                                    </th>
+
+                                </tr>
+
+                                </thead>
+
+
+                                <tbody>
+
+                                <tr
+                                        th:if="${#lists.isEmpty(users)}">
+
+                                    <td
+                                            colspan="5"
+                                            class="empty-state">
+
+                                        <i class="bi bi-people"></i>
+
+                                        <div>
+                                            No users found.
+                                        </div>
+
+                                    </td>
+
+                                </tr>
+
+
+                                <tr
+                                        th:each="user : ${users}">
+
+                                    <td class="px-3">
+
+                                    <span
+                                            th:text="${user.userId}">
+                                        1
+                                    </span>
+
+                                    </td>
+
+
+                                    <td>
+
+                                    <span
+                                            class="fw-semibold"
+                                            th:text="${user.fullName}">
+                                        ForgeHub Admin
+                                    </span>
+
+                                    </td>
+
+
+                                    <td>
+
+                                    <span
+                                            th:text="${user.email}">
+                                        admin@forgehub.com
+                                    </span>
+
+                                    </td>
+
+
+                                    <td>
+
+                                    <span
+                                            class="vendor-badge"
+                                            th:text="${user.role}">
+                                        VENDOR
+                                    </span>
+
+                                    </td>
+
+
+                                    <td>
+
+                                    <span
+                                            th:if="${user.totpConfigured}"
+                                            class="configured-badge">
+
+                                        <i class="bi bi-shield-check me-1"></i>
+
+                                        Configured
+
+                                    </span>
+
+
+                                        <span
+                                                th:unless="${user.totpConfigured}"
+                                                class="not-configured-badge">
+
+                                        <i class="bi bi-shield-x me-1"></i>
+
+                                        Not Configured
+
+                                    </span>
+
+                                    </td>
+
+                                </tr>
+
+                                </tbody>
+
+                            </table>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+</main>
+
+<script
+        src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js">
+</script>
+
+</body>
+
+</html>

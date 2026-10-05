@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<aside th:fragment="sidebar" class="admin-sidebar">
+
+    <div class="sidebar-brand">
+        <div class="brand-mark">F</div>
+        <div>
+            <div class="brand-name">ForgeHub</div>
+            <div class="brand-role">ADMIN PANEL</div>
+        </div>
+    </div>
+
+    <nav class="sidebar-nav">
+
+        <div class="sidebar-label">MAIN</div>
+
+        <a th:href="@{/admin/dashboard}" class="sidebar-link">
+            <i class="bi bi-grid-1x2"></i>
+            <span>Dashboard</span>
+        </a>
+
+        <div class="sidebar-label mt-3">PROCUREMENT</div>
+
+        <a th:href="@{/admin/rfq/list}" class="sidebar-link">
+            <i class="bi bi-file-earmark-text"></i>
+            <span>RFQ List</span>
+        </a>
+
+        <a th:href="@{/admin/vendor-quotation}" class="sidebar-link">
+            <i class="bi bi-receipt"></i>
+            <span>Vendor Quotation</span>
+        </a>
+
+        <a th:href="@{/admin/finance-quotation}" class="sidebar-link">
+            <i class="bi bi-currency-rupee"></i>
+            <span>Finance Quotation</span>
+        </a>
+
+        <div class="sidebar-label mt-3">MANAGEMENT</div>
+
+        <a th:href="@{/admin/users}" class="sidebar-link">
+            <i class="bi bi-people"></i>
+            <span>User</span>
+        </a>
+
+    </nav>
+
+    <div class="sidebar-footer">
+        <div class="admin-avatar">A</div>
+        <div>
+            <div class="footer-name">Administrator</div>
+            <div class="footer-role">Admin</div>
+        </div>
+    </div>
+
+</aside>
+
+</body>
+</html>

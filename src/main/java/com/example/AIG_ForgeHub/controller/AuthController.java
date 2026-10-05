@@ -1,15 +1,14 @@
 package com.example.AIG_ForgeHub.controller;
 
-import com.example.AIG_ForgeHub.dto.LoginRequest;
-import com.example.AIG_ForgeHub.dto.LoginResponse;
-import com.example.AIG_ForgeHub.dto.VerifyEmailOtpRequest;
-import com.example.AIG_ForgeHub.model.User;
+import com.example.AIG_ForgeHub.dto.authDto.LoginRequest;
+import com.example.AIG_ForgeHub.dto.authDto.LoginResponse;
+import com.example.AIG_ForgeHub.dto.authDto.VerifyEmailOtpRequest;
+import com.example.AIG_ForgeHub.entity.User;
 import com.example.AIG_ForgeHub.repository.UserRepository;
 import com.example.AIG_ForgeHub.security.CookieUtil;
 import com.example.AIG_ForgeHub.service.AuthService;
 import com.example.AIG_ForgeHub.service.EmailService;
 import com.example.AIG_ForgeHub.service.TwoFactorService;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -46,14 +45,12 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public String login(
-            @Valid @ModelAttribute LoginRequest loginRequest,
+    public String login(@Valid @ModelAttribute LoginRequest loginRequest,
             Model model) {
 
         log.info("Login attempt for email: {}",loginRequest.getEmail());
 
         try {
-
             LoginResponse loginResponse=authService.login(loginRequest);
 
             log.info("Password authentication verified for email: {}",loginRequest.getEmail());
@@ -65,40 +62,29 @@ public class AuthController {
 
                 log.info("First time login detected for email: {}",loginRequest.getEmail());
 
-                String qrCode=twoFactorService.generateQrCode(
-                        loginResponse.getEmail()
-                );
-
+                String qrCode=twoFactorService.generateQrCode(loginResponse.getEmail());
                 model.addAttribute("qrCode",qrCode);
-
                 return "show-qr";
 
             } else {
-
                 log.info("Existing user requires 2FA verification for email: {}",loginRequest.getEmail());
-
                 return "verify-otp";
             }
 
         } catch(Exception e) {
-
             log.warn("Login failed for email: {}",loginRequest.getEmail());
 
             model.addAttribute("error","Invalid email or password");
-
             return "login";
         }
     }
 
     @PostMapping("/logout")
-    public String logout(
-            @CookieValue(value="refreshToken",required=false) String refreshToken,
+    public String logout(@CookieValue(value="refreshToken",required=false) String refreshToken,
             HttpServletResponse response) {
 
         try {
-
             authService.logout(refreshToken);
-
             cookieUtil.clearAccessTokenCookie(response);
             cookieUtil.clearRefreshTokenCookie(response);
 
@@ -107,12 +93,10 @@ public class AuthController {
             return "redirect:/auth/login";
 
         } catch(Exception e) {
-
             log.error("Logout failed",e);
 
             cookieUtil.clearAccessTokenCookie(response);
             cookieUtil.clearRefreshTokenCookie(response);
-
             return "redirect:/auth/login";
         }
     }
@@ -128,15 +112,12 @@ public class AuthController {
         log.info("Email OTP requested for user: {}",email);
 
         try {
-
             emailService.sendOtp(email);
 
             log.info("Email OTP sent successfully for user: {}",email);
 
             model.addAttribute("email",email);
-
             model.addAttribute("success","OTP sent successfully to your email.");
-
             return "verify-email-otp";
 
         } catch(RuntimeException e) {
@@ -144,30 +125,22 @@ public class AuthController {
             log.warn("Unable to send email OTP for user: {}",email);
 
             model.addAttribute("error",e.getMessage());
-
             return "lost-otp";
 
         } catch(Exception e) {
-
             log.error("Unexpected error while sending email OTP to user: {}",email,e);
-
             model.addAttribute("error","Unable to send OTP. Please try again.");
-
             return "lost-otp";
         }
     }
 
     @PostMapping("/verify-email-otp")
-    public String verifyEmailOtp(
-            @Valid @ModelAttribute VerifyEmailOtpRequest request,
+    public String verifyEmailOtp(@Valid @ModelAttribute VerifyEmailOtpRequest request,
             Model model) {
 
         log.info("Email OTP verification attempt for user: {}",request.getEmail());
 
-        boolean verified=emailService.verifyOtp(
-                request.getEmail(),
-                request.getOtp()
-        );
+        boolean verified=emailService.verifyOtp(request.getEmail(), request.getOtp());
 
         if(!verified) {
 
@@ -175,7 +148,6 @@ public class AuthController {
 
             model.addAttribute("email",request.getEmail());
             model.addAttribute("error","Invalid or expired OTP");
-
             return "verify-email-otp";
         }
 

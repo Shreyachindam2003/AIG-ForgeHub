@@ -1,0 +1,1549 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Submit Quotation | ForgeHub</title>
+
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+          rel="stylesheet">
+
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+          rel="stylesheet">
+
+    <!-- Existing CSS -->
+    <link rel="stylesheet"
+          th:href="@{/css/admin.css}">
+
+    <style>
+
+        body {
+            background: #f5f7fa;
+        }
+
+        .quotation-wrapper {
+            max-width: 1450px;
+            margin: 0 auto;
+            padding: 28px;
+        }
+
+        /* =====================================================
+           HEADER
+        ===================================================== */
+
+        .quotation-header {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 20px 24px;
+            margin-bottom: 20px;
+        }
+
+        .quotation-title {
+            color: #111827;
+            font-size: 21px;
+            font-weight: 700;
+            margin-bottom: 3px;
+        }
+
+        .quotation-subtitle {
+            color: #6b7280;
+            font-size: 13px;
+        }
+
+        .rfq-number {
+            color: #2563eb;
+            font-weight: 600;
+        }
+
+        .status-badge {
+            background: #dcfce7;
+            color: #15803d;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        /* =====================================================
+           RFQ INFORMATION
+        ===================================================== */
+
+        .info-card {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 18px 22px;
+            margin-bottom: 20px;
+        }
+
+        .info-label {
+            color: #6b7280;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .4px;
+            margin-bottom: 4px;
+        }
+
+        .info-value {
+            color: #111827;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        /* =====================================================
+           SECTION CARD
+        ===================================================== */
+
+        .section-card {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .section-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #e5e7eb;
+
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .section-title {
+            color: #111827;
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        .section-description {
+            color: #6b7280;
+            font-size: 12px;
+            margin-top: 2px;
+        }
+
+        /* =====================================================
+           TABLE
+        ===================================================== */
+
+        .quotation-table {
+            margin-bottom: 0;
+        }
+
+        .quotation-table thead th {
+            background: #f8fafc;
+            border-bottom: 1px solid #e5e7eb;
+
+            color: #6b7280;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: .4px;
+
+            padding: 13px 14px;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .quotation-table tbody td {
+            border-bottom: 1px solid #f1f5f9;
+
+            color: #374151;
+            font-size: 13px;
+
+            padding: 15px 14px;
+            vertical-align: middle;
+        }
+
+        .quotation-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .quotation-table tbody tr:hover {
+            background: #fafbfc;
+        }
+
+        .item-name {
+            color: #111827;
+            font-weight: 600;
+        }
+
+        .item-number {
+            color: #9ca3af;
+            font-size: 11px;
+            margin-top: 3px;
+        }
+
+        .required-qty {
+            color: #111827;
+            font-weight: 600;
+        }
+
+        .uom-text {
+            color: #6b7280;
+            font-size: 12px;
+            margin-left: 3px;
+        }
+
+        /* =====================================================
+           FORM INPUTS
+        ===================================================== */
+
+        .form-control,
+        .form-select {
+            border-color: #d1d5db;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, .10);
+        }
+
+        .qty-input {
+            width: 105px;
+        }
+
+        .price-input {
+            width: 130px;
+        }
+
+        /* Remove number input arrows */
+
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+
+        /* Quantity error */
+
+        .quantity-error {
+            display: none;
+            color: #dc3545;
+            font-size: 11px;
+            line-height: 1.3;
+            margin-top: 5px;
+            max-width: 150px;
+        }
+
+        .quantity-error.show {
+            display: block;
+        }
+
+        .available-qty.is-invalid {
+            border-color: #dc3545;
+            background-image: none;
+        }
+
+        /* =====================================================
+           VIEW BUTTON
+        ===================================================== */
+
+        .view-btn {
+            width: 34px;
+            height: 34px;
+
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+
+            background: #ffffff;
+            border: 1px solid #dbe2ea;
+            border-radius: 6px;
+
+            color: #4b5563;
+            transition: .2s;
+        }
+
+        .view-btn:hover {
+            background: #eff6ff;
+            border-color: #bfdbfe;
+            color: #2563eb;
+        }
+
+        /* =====================================================
+           COMMERCIAL TERMS
+        ===================================================== */
+
+        .commercial-body {
+            padding: 20px;
+        }
+
+        .field-label {
+            color: #374151;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        /* =====================================================
+           SUMMARY
+        ===================================================== */
+
+        .summary-body {
+            padding: 20px;
+        }
+
+        .summary-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            color: #4b5563;
+            font-size: 13px;
+
+            padding: 9px 0;
+        }
+
+        .summary-row strong {
+            color: #111827;
+        }
+
+        .summary-divider {
+            border-top: 1px dashed #d1d5db;
+            margin: 8px 0;
+        }
+
+        .grand-total {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            border-top: 1px solid #e5e7eb;
+            margin-top: 8px;
+            padding-top: 15px;
+        }
+
+        .grand-total-label {
+            color: #111827;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .grand-total-value {
+            color: #2563eb;
+            font-size: 21px;
+            font-weight: 800;
+        }
+
+        /* =====================================================
+           ACTIONS
+        ===================================================== */
+
+        .action-bar {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+
+        .btn-submit {
+            background: #2563eb;
+            border-color: #2563eb;
+            border-radius: 6px;
+
+            color: #ffffff;
+            font-size: 13px;
+            font-weight: 600;
+
+            padding: 10px 22px;
+        }
+
+        .btn-submit:hover {
+            background: #1d4ed8;
+            border-color: #1d4ed8;
+            color: #ffffff;
+        }
+
+        .btn-submit:disabled {
+            background: #93c5fd;
+            border-color: #93c5fd;
+            cursor: not-allowed;
+        }
+
+        .btn-back {
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 10px 18px;
+        }
+
+        /* =====================================================
+           MODAL
+        ===================================================== */
+
+        .modal-title {
+            color: #111827;
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+
+            border-bottom: 1px solid #f1f5f9;
+            padding: 10px 0;
+            gap: 20px;
+        }
+
+        .detail-label {
+            color: #6b7280;
+            font-size: 13px;
+        }
+
+        .detail-value {
+            color: #111827;
+            font-size: 13px;
+            font-weight: 600;
+            text-align: right;
+        }
+
+        /* =====================================================
+           MOBILE
+        ===================================================== */
+
+        @media (max-width: 992px) {
+
+            .quotation-wrapper {
+                padding: 15px;
+            }
+
+            .quotation-table {
+                min-width: 950px;
+            }
+
+            .table-responsive {
+                overflow-x: auto;
+            }
+
+        }
+
+        @media (max-width: 576px) {
+
+            .quotation-header {
+                padding: 16px;
+            }
+
+            .quotation-header > div {
+                align-items: flex-start !important;
+                gap: 15px;
+            }
+
+            .status-badge {
+                display: none;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<!-- =========================================================
+     VENDOR SIDEBAR
+========================================================= -->
+
+<div th:replace="~{fragments/vendor-sidebar :: sidebar}"></div>
+
+
+<!-- =========================================================
+     MAIN CONTENT
+========================================================= -->
+
+<main class="admin-content">
+
+    <div class="quotation-wrapper">
+
+
+        <!-- =====================================================
+             PAGE HEADER
+        ====================================================== -->
+
+        <div class="quotation-header">
+
+            <div class="d-flex justify-content-between align-items-center">
+
+                <div>
+
+                    <div class="quotation-title">
+                        Submit Quotation
+                    </div>
+
+                    <div class="quotation-subtitle">
+
+                        RFQ
+
+                        <span class="rfq-number"
+                              th:text="${rfq.rfqNo}">
+                            RFQ-001
+                        </span>
+
+                        <span class="mx-1">
+                            •
+                        </span>
+
+                        Submit your commercial offer for this RFQ.
+
+                    </div>
+
+                </div>
+
+
+                <div class="d-flex align-items-center gap-3">
+
+                    <span class="status-badge"
+                          th:text="${rfq.status}">
+                        OPEN
+                    </span>
+
+                    <a th:href="@{/vendor/open-rfq(vendorId=${vendorId})}"
+                       class="btn btn-outline-secondary btn-back">
+
+                        <i class="bi bi-arrow-left me-1"></i>
+
+                        Back
+
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =====================================================
+             RFQ INFORMATION
+        ====================================================== -->
+
+        <div class="info-card">
+
+            <div class="row g-4">
+
+
+                <!-- RFQ NUMBER -->
+
+                <div class="col-md-3">
+
+                    <div class="info-label">
+                        RFQ Number
+                    </div>
+
+                    <div class="info-value"
+                         th:text="${rfq.rfqNo}">
+                        -
+                    </div>
+
+                </div>
+
+
+                <!-- INDENT NUMBER -->
+
+                <div class="col-md-3">
+
+                    <div class="info-label">
+                        Indent Number
+                    </div>
+
+                    <div class="info-value"
+                         th:text="${rfq.indentNo}">
+                        -
+                    </div>
+
+                </div>
+
+
+                <!-- OPENING DATE -->
+
+                <div class="col-md-3">
+
+                    <div class="info-label">
+                        Opening Date
+                    </div>
+
+                    <div class="info-value"
+                         th:text="${rfq.bidDate != null
+                                  ? #temporals.format(rfq.bidDate, 'dd-MM-yyyy')
+                                  : '-'}">
+                        -
+                    </div>
+
+                </div>
+
+
+                <!-- CLOSING DATE -->
+
+                <div class="col-md-3">
+
+                    <div class="info-label">
+                        Bid Closing Date
+                    </div>
+
+                    <div class="info-value"
+                         th:text="${rfq.expiryDateOfBid != null
+                                  ? #temporals.format(rfq.expiryDateOfBid, 'dd-MM-yyyy')
+                                  : '-'}">
+                        -
+                    </div>
+
+                </div>
+
+
+            </div>
+
+        </div>
+
+
+        <!-- =====================================================
+             QUOTATION FORM
+        ====================================================== -->
+
+        <form th:action="@{'/vendor/rfq/' + ${rfq.rfqId} + '/submit'}"
+              method="post"
+              id="quotationForm">
+
+            <input type="hidden"
+                   name="vendorId"
+                   th:value="${vendorId}">
+            <!-- =================================================
+                 RFQ ITEMS
+            ================================================== -->
+
+            <div class="section-card">
+
+
+                <!-- SECTION HEADER -->
+
+                <div class="section-header">
+
+                    <div>
+
+                        <div class="section-title">
+                            RFQ Items
+                        </div>
+
+                        <div class="section-description">
+                            Enter the quantity and unit price you can supply.
+                        </div>
+
+                    </div>
+
+
+                    <span class="badge text-bg-light">
+                        GST: 10%
+                    </span>
+
+                </div>
+
+
+                <!-- TABLE -->
+
+                <div class="table-responsive">
+
+                    <table class="table quotation-table">
+
+                        <thead>
+
+                        <tr>
+
+                            <th style="width: 40px;">
+                                #
+                            </th>
+
+                            <th style="min-width: 240px;">
+                                Item
+                            </th>
+
+                            <th>
+                                Required
+                            </th>
+
+                            <th>
+                                Available
+                            </th>
+
+                            <th>
+                                Unit Price
+                            </th>
+
+                            <th>
+                                GST
+                            </th>
+
+                            <th>
+                                Total
+                            </th>
+
+                            <th class="text-center">
+                                View
+                            </th>
+
+                        </tr>
+
+                        </thead>
+
+
+                        <tbody>
+
+
+                        <tr th:each="item, stat : ${rfq.items}"
+                            class="quotation-row">
+
+
+                            <!-- NUMBER -->
+
+                            <td class="text-muted"
+                                th:text="${stat.count}">
+                                1
+                            </td>
+
+
+                            <!-- ITEM -->
+
+                            <td>
+
+                                <div class="item-name"
+                                     th:text="${item.itemName}">
+                                    Item Name
+                                </div>
+
+                                <div class="item-number">
+
+                                    Item No:
+
+                                    <span th:text="${item.itemNo}">
+                                        -
+                                    </span>
+
+                                </div>
+
+                            </td>
+
+
+                            <!-- REQUIRED -->
+
+                            <td>
+
+                                <span class="required-qty"
+                                      th:text="${item.reqQty}">
+                                    10
+                                </span>
+
+                                <span class="uom-text"
+                                      th:text="${item.uom}">
+                                    PCS
+                                </span>
+
+                            </td>
+
+
+                            <!-- AVAILABLE -->
+
+                            <td>
+
+                                <input type="number"
+                                       class="form-control qty-input available-qty"
+                                       th:name="'items[' + ${stat.index} + '].availableQty'"
+                                       min="0"
+                                       th:max="${item.reqQty}"
+                                       th:value="${item.reqQty}"
+                                       required>
+
+                                <!-- Quantity Error -->
+
+                                <div class="quantity-error">
+
+                                    Available quantity cannot be greater
+                                    than required quantity
+                                    (<span th:text="${item.reqQty}">
+                                        2
+                                    </span>).
+
+                                </div>
+
+
+                                <!-- ITEM ID -->
+
+                                <input type="hidden"
+                                       th:name="'items[' + ${stat.index} + '].itemId'"
+                                       th:value="${item.itemId}">
+                            </td>
+
+
+                            <!-- UNIT PRICE -->
+
+                            <td>
+
+                                <input type="number"
+                                       class="form-control price-input unit-price"
+                                       th:name="'items[' + ${stat.index} + '].unitPrice'"
+                                       min="0"
+                                       step="0.01"
+                                       value="0"
+                                       required>
+
+                            </td>
+
+
+                            <!-- GST -->
+
+                            <td>
+
+                                <span class="text-muted">
+                                    10%
+                                </span>
+
+                            </td>
+
+
+                            <!-- ITEM TOTAL -->
+
+                            <td>
+
+                                <strong class="line-total">
+                                    ₹0.00
+                                </strong>
+
+                            </td>
+
+
+                            <!-- VIEW -->
+
+                            <td class="text-center">
+
+                                <button type="button"
+                                        class="view-btn"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#itemDetailsModal"
+
+                                        th:attr="
+                                        data-item-name=${item.itemName},
+                                        data-item-no=${item.itemNo},
+                                        data-description=${item.description},
+                                        data-uom=${item.uom},
+                                        data-location=${item.deliveryLocation},
+                                        data-factory=${item.factoryCode},
+                                        data-required=${item.reqQty},
+                                        data-date=${item.reqDeliveryDate}">
+
+                                    <i class="bi bi-eye"></i>
+
+                                </button>
+
+                            </td>
+
+
+                        </tr>
+
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+
+            <!-- =================================================
+                 COMMERCIAL TERMS + SUMMARY
+            ================================================== -->
+
+            <div class="row g-4">
+
+
+                <!-- =================================================
+                     COMMERCIAL TERMS
+                ================================================== -->
+
+                <div class="col-lg-7">
+
+                    <div class="section-card h-100">
+
+
+                        <!-- HEADER -->
+
+                        <div class="section-header">
+
+                            <div>
+
+                                <div class="section-title">
+                                    Commercial Terms
+                                </div>
+
+                                <div class="section-description">
+                                    Provide delivery and payment conditions.
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- BODY -->
+
+                        <div class="commercial-body">
+
+                            <div class="row g-3">
+
+
+                                <!-- DELIVERY DATE -->
+
+                                <div class="col-md-6">
+
+                                    <label class="field-label">
+                                        Expected Delivery Date
+                                    </label>
+
+                                    <input type="date"
+                                           name="deliveryDate"
+                                           class="form-control"
+                                           required>
+
+                                </div>
+
+
+                                <!-- PAYMENT TERMS -->
+
+                                <div class="col-md-6">
+
+                                    <label class="field-label">
+                                        Payment Terms
+                                    </label>
+
+                                    <select name="paymentTerms"
+                                            class="form-select"
+                                            required>
+
+                                        <option value="">
+                                            Select payment terms
+                                        </option>
+
+                                        <option value="Advance Payment">
+                                            Advance Payment
+                                        </option>
+
+                                        <option value="15 Days">
+                                            15 Days
+                                        </option>
+
+                                        <option value="30 Days">
+                                            30 Days
+                                        </option>
+
+                                        <option value="45 Days">
+                                            45 Days
+                                        </option>
+
+                                        <option value="60 Days">
+                                            60 Days
+                                        </option>
+
+                                        <option value="90 Days">
+                                            90 Days
+                                        </option>
+
+                                    </select>
+
+                                </div>
+
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- =================================================
+                     QUOTATION SUMMARY
+                ================================================== -->
+
+                <div class="col-lg-5">
+
+                    <div class="section-card">
+
+
+                        <!-- HEADER -->
+
+                        <div class="section-header">
+
+                            <div class="section-title">
+                                Quotation Summary
+                            </div>
+
+                        </div>
+
+
+                        <!-- BODY -->
+
+                        <div class="summary-body">
+
+
+                            <!-- SUBTOTAL -->
+
+                            <div class="summary-row">
+
+                                <span>
+                                    Subtotal
+                                </span>
+
+                                <strong id="subtotal">
+                                    ₹0.00
+                                </strong>
+
+                            </div>
+
+
+                            <!-- GST -->
+
+                            <div class="summary-row">
+
+                                <span>
+                                    GST (10%)
+                                </span>
+
+                                <strong id="gstAmount">
+                                    ₹0.00
+                                </strong>
+
+                            </div>
+
+
+                            <div class="summary-divider"></div>
+
+
+                            <!-- GRAND TOTAL -->
+
+                            <div class="grand-total">
+
+                                <span class="grand-total-label">
+                                    Grand Total
+                                </span>
+
+                                <span class="grand-total-value"
+                                      id="grandTotal">
+                                    ₹0.00
+                                </span>
+
+                            </div>
+
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+            </div>
+
+
+            <!-- =================================================
+                 ACTION BUTTONS
+            ================================================== -->
+
+            <div class="action-bar">
+
+
+                <a th:href="@{/vendor/open-rfq(vendorId=${vendorId})}"
+                   class="btn btn-outline-secondary btn-back">
+
+                    Cancel
+
+                </a>
+
+
+                <button type="submit"
+                        class="btn btn-submit"
+                        id="submitQuotationBtn">
+
+                    <i class="bi bi-send me-1"></i>
+
+                    Submit Quotation
+
+                </button>
+
+
+            </div>
+
+
+        </form>
+
+
+    </div>
+
+</main>
+
+
+<!-- =========================================================
+     ITEM DETAILS MODAL
+========================================================= -->
+
+<div class="modal fade"
+     id="itemDetailsModal"
+     tabindex="-1"
+     aria-hidden="true">
+
+
+    <div class="modal-dialog modal-dialog-centered">
+
+
+        <div class="modal-content">
+
+
+            <!-- MODAL HEADER -->
+
+            <div class="modal-header">
+
+                <div>
+
+                    <h5 class="modal-title">
+                        Item Details
+                    </h5>
+
+                    <small class="text-muted"
+                           id="modalItemNo">
+                        -
+                    </small>
+
+                </div>
+
+
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal">
+                </button>
+
+            </div>
+
+
+            <!-- MODAL BODY -->
+
+            <div class="modal-body">
+
+
+                <!-- ITEM -->
+
+                <div class="detail-row">
+
+                    <span class="detail-label">
+                        Item
+                    </span>
+
+                    <span class="detail-value"
+                          id="modalItemName">
+                        -
+                    </span>
+
+                </div>
+
+
+                <!-- REQUIRED -->
+
+                <div class="detail-row">
+
+                    <span class="detail-label">
+                        Required Quantity
+                    </span>
+
+                    <span class="detail-value"
+                          id="modalRequired">
+                        -
+                    </span>
+
+                </div>
+
+
+                <!-- UOM -->
+
+                <div class="detail-row">
+
+                    <span class="detail-label">
+                        UOM
+                    </span>
+
+                    <span class="detail-value"
+                          id="modalUom">
+                        -
+                    </span>
+
+                </div>
+
+
+                <!-- LOCATION -->
+
+                <div class="detail-row">
+
+                    <span class="detail-label">
+                        Delivery Location
+                    </span>
+
+                    <span class="detail-value"
+                          id="modalLocation">
+                        -
+                    </span>
+
+                </div>
+
+
+                <!-- FACTORY -->
+
+                <div class="detail-row">
+
+                    <span class="detail-label">
+                        Factory Code
+                    </span>
+
+                    <span class="detail-value"
+                          id="modalFactory">
+                        -
+                    </span>
+
+                </div>
+
+
+                <!-- DELIVERY DATE -->
+
+                <div class="detail-row">
+
+                    <span class="detail-label">
+                        Required Delivery Date
+                    </span>
+
+                    <span class="detail-value"
+                          id="modalDate">
+                        -
+                    </span>
+
+                </div>
+
+
+                <!-- DESCRIPTION -->
+
+                <div class="mt-3">
+
+                    <div class="detail-label mb-2">
+                        Description
+                    </div>
+
+                    <div class="p-3 bg-light rounded small"
+                         id="modalDescription">
+                        -
+                    </div>
+
+                </div>
+
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     BOOTSTRAP JS
+========================================================= -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js">
+</script>
+
+
+<!-- =========================================================
+     SIMPLE JS
+========================================================= -->
+
+<script>
+
+    document.addEventListener("DOMContentLoaded", function () {
+
+        const rows =
+            document.querySelectorAll(".quotation-row");
+
+        const subtotalElement =
+            document.getElementById("subtotal");
+
+        const gstElement =
+            document.getElementById("gstAmount");
+
+        const grandTotalElement =
+            document.getElementById("grandTotal");
+
+        const form =
+            document.getElementById("quotationForm");
+
+        const submitButton =
+            document.getElementById("submitQuotationBtn");
+
+
+        /* =====================================================
+           CALCULATE TOTALS
+        ===================================================== */
+
+        function calculateTotals() {
+
+            let subtotal = 0;
+
+            let hasInvalidQuantity = false;
+
+
+            rows.forEach(row => {
+
+                const quantityInput =
+                    row.querySelector(".available-qty");
+
+                const priceInput =
+                    row.querySelector(".unit-price");
+
+                const quantityError =
+                    row.querySelector(".quantity-error");
+
+                const lineTotal =
+                    row.querySelector(".line-total");
+
+
+                let quantity =
+                    parseFloat(quantityInput.value) || 0;
+
+                const price =
+                    parseFloat(priceInput.value) || 0;
+
+                const maxQuantity =
+                    parseFloat(quantityInput.max);
+
+
+                /* Quantity validation */
+
+                if (quantity > maxQuantity) {
+
+                    quantityInput.classList.add("is-invalid");
+
+                    quantityError.classList.add("show");
+
+                    hasInvalidQuantity = true;
+
+                } else {
+
+                    quantityInput.classList.remove("is-invalid");
+
+                    quantityError.classList.remove("show");
+
+                }
+
+
+                /* Item total */
+
+                const itemTotal =
+                    quantity * price;
+
+
+                lineTotal.textContent =
+                    "₹" + itemTotal.toFixed(2);
+
+
+                subtotal += itemTotal;
+
+            });
+
+
+            /* GST */
+
+            const gst =
+                subtotal * 0.10;
+
+
+            /* Grand total */
+
+            const grandTotal =
+                subtotal + gst;
+
+
+            /* Display */
+
+            subtotalElement.textContent =
+                "₹" + subtotal.toFixed(2);
+
+            gstElement.textContent =
+                "₹" + gst.toFixed(2);
+
+            grandTotalElement.textContent =
+                "₹" + grandTotal.toFixed(2);
+
+
+            /*
+             * Disable submit when
+             * quantity is invalid.
+             */
+
+            submitButton.disabled =
+                hasInvalidQuantity;
+
+        }
+
+
+        /* =====================================================
+           QUANTITY + PRICE CHANGE
+        ===================================================== */
+
+        document
+            .querySelectorAll(".available-qty, .unit-price")
+            .forEach(input => {
+
+                input.addEventListener(
+                    "input",
+                    calculateTotals
+                );
+
+            });
+
+
+        /* =====================================================
+           FORM SUBMIT CHECK
+        ===================================================== */
+
+        form.addEventListener("submit", function (event) {
+
+            let valid = true;
+
+
+            rows.forEach(row => {
+
+                const quantityInput =
+                    row.querySelector(".available-qty");
+
+                const quantityError =
+                    row.querySelector(".quantity-error");
+
+                const quantity =
+                    parseFloat(quantityInput.value) || 0;
+
+                const maxQuantity =
+                    parseFloat(quantityInput.max);
+
+
+                if (quantity < 0 ||
+                    quantity > maxQuantity) {
+
+                    quantityInput.classList.add("is-invalid");
+
+                    quantityError.classList.add("show");
+
+                    valid = false;
+
+                }
+
+            });
+
+
+            if (!valid) {
+
+                event.preventDefault();
+
+            }
+
+        });
+
+
+        /* =====================================================
+           INITIAL CALCULATION
+        ===================================================== */
+
+        calculateTotals();
+
+
+        /* =====================================================
+           ITEM DETAILS MODAL
+        ===================================================== */
+
+        document
+            .querySelectorAll(".view-btn")
+            .forEach(button => {
+
+                button.addEventListener("click", function () {
+
+                    document
+                        .getElementById("modalItemName")
+                        .textContent =
+                        this.dataset.itemName || "-";
+
+
+                    document
+                        .getElementById("modalItemNo")
+                        .textContent =
+                        "Item No: " +
+                        (this.dataset.itemNo || "-");
+
+
+                    document
+                        .getElementById("modalRequired")
+                        .textContent =
+                        this.dataset.required || "-";
+
+
+                    document
+                        .getElementById("modalUom")
+                        .textContent =
+                        this.dataset.uom || "-";
+
+
+                    document
+                        .getElementById("modalLocation")
+                        .textContent =
+                        this.dataset.location || "-";
+
+
+                    document
+                        .getElementById("modalFactory")
+                        .textContent =
+                        this.dataset.factory || "-";
+
+
+                    document
+                        .getElementById("modalDate")
+                        .textContent =
+                        this.dataset.date || "-";
+
+
+                    document
+                        .getElementById("modalDescription")
+                        .textContent =
+                        this.dataset.description || "-";
+
+                });
+
+            });
+
+    });
+
+</script>
+
+
+</body>
+
+</html>

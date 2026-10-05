@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0">
+
+    <title>Finalized Quotations - ForgeHub</title>
+
+
+    <!-- Bootstrap 5 -->
+    <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+            rel="stylesheet">
+
+
+    <!-- Bootstrap Icons -->
+    <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+            rel="stylesheet">
+
+
+    <!-- DataTables Bootstrap 5 -->
+    <link
+            href="https://cdn.datatables.net/2.1.8/css/dataTables.bootstrap5.min.css"
+            rel="stylesheet">
+
+
+    <!-- Existing CSS -->
+    <link
+            rel="stylesheet"
+            th:href="@{/css/admin.css}">
+
+</head>
+
+
+<body>
+
+
+<!-- Vendor Sidebar -->
+
+<div th:replace="~{fragments/vendor-sidebar :: sidebar}"></div>
+
+
+<main class="admin-content">
+
+    <div class="container-fluid p-0">
+
+
+        <!-- =========================
+             PAGE HEADER
+        ========================== -->
+
+        <div class="mb-4">
+
+            <h2 class="fw-bold mb-1">
+
+                Finalized Quotations
+
+            </h2>
+
+            <p class="text-muted mb-0">
+
+                Quotations finalized by Admin.
+
+            </p>
+
+        </div>
+
+
+        <!-- =========================
+             TABLE CARD
+        ========================== -->
+
+        <div class="card border-0 shadow-sm">
+
+            <div class="card-body p-0">
+
+
+                <!-- =========================
+                     NO FINALIZED QUOTATIONS
+                ========================== -->
+
+                <div
+                        th:if="${#lists.isEmpty(finalizedQuotations)}"
+                        class="text-center py-5">
+
+                    <i
+                            class="bi bi-check2-square fs-1 text-muted">
+                    </i>
+
+                    <h5 class="mt-3">
+
+                        No finalized quotations
+
+                    </h5>
+
+                    <p class="text-muted mb-0">
+
+                        Finalized quotations will appear here
+                        after Admin completes the award process.
+
+                    </p>
+
+                </div>
+
+
+                <!-- =========================
+                     FINALIZED TABLE
+                ========================== -->
+
+                <div
+                        th:unless="${#lists.isEmpty(finalizedQuotations)}"
+                        class="table-responsive">
+
+                    <table
+                            id="finalizedQuotationTable"
+                            class="table table-hover align-middle mb-0 w-100">
+
+                        <thead class="table-light">
+
+                        <tr>
+
+                            <th>
+                                Finalized ID
+                            </th>
+
+                            <th>
+                                RFQ No
+                            </th>
+
+                            <th>
+                                Indent No
+                            </th>
+
+                            <th>
+                                Item Name
+                            </th>
+
+                            <th>
+                                Vendor Name
+                            </th>
+
+                            <th>
+                                Quoted Amount
+                            </th>
+
+                            <th>
+                                Finalized Date
+                            </th>
+
+                            <th class="text-center">
+                                Action
+                            </th>
+
+                        </tr>
+
+                        </thead>
+
+
+                        <tbody>
+
+                        <tr
+                                th:each="finalized : ${finalizedQuotations}">
+
+
+                            <!-- FINALIZED ID -->
+
+                            <td class="fw-semibold">
+
+                                <span
+                                        th:text="${finalized.finalId}">
+                                    1
+                                </span>
+
+                            </td>
+
+
+                            <!-- RFQ NO -->
+
+                            <td>
+
+                                <span
+                                        class="fw-semibold text-primary"
+                                        th:text="${finalized.rfqNo}">
+                                    RFQ
+                                </span>
+
+                            </td>
+
+
+                            <!-- INDENT NO -->
+
+                            <td>
+
+                                <span
+                                        th:text="${finalized.indentNo}">
+                                    INDENT
+                                </span>
+
+                            </td>
+
+
+                            <!-- ITEM NAME -->
+
+                            <td>
+
+                                <!-- Single item -->
+
+                                <span
+                                        th:if="${finalized.items != null
+                                        and #lists.size(finalized.items) == 1}"
+                                        th:text="${finalized.items[0].itemName}">
+                                    Item
+                                </span>
+
+
+                                <!-- Multiple items -->
+
+                                <span
+                                        th:if="${finalized.items != null
+                                        and #lists.size(finalized.items) > 1}">
+
+                                    <span
+                                            th:text="${finalized.items[0].itemName}">
+                                        Item
+                                    </span>
+
+                                    <span class="text-muted">
+
+                                        +
+
+                                        <span
+                                                th:text="${#lists.size(finalized.items) - 1}">
+                                            1
+                                        </span>
+
+                                        more
+
+                                    </span>
+
+                                </span>
+
+
+                                <!-- No item -->
+
+                                <span
+                                        th:if="${finalized.items == null
+                                        or #lists.isEmpty(finalized.items)}">
+
+                                    -
+
+                                </span>
+
+                            </td>
+
+
+                            <!-- VENDOR NAME -->
+
+                            <td>
+
+                                <span
+                                        th:text="${finalized.vendorName}">
+                                    Vendor
+                                </span>
+
+                            </td>
+
+
+                            <!-- QUOTED AMOUNT -->
+
+                            <td>
+
+                                <span class="fw-semibold">
+
+                                    ₹
+
+                                    <span
+                                            th:text="${#numbers.formatDecimal(
+                                                finalized.quotedAmount,
+                                                1,
+                                                2
+                                            )}">
+                                        0.00
+                                    </span>
+
+                                </span>
+
+                            </td>
+
+
+                            <!-- FINALIZED DATE -->
+
+                            <td>
+
+                                <span
+                                        th:if="${finalized.finalizedDate != null}"
+                                        th:text="${#temporals.format(
+                                            finalized.finalizedDate,
+                                            'dd-MM-yyyy HH:mm'
+                                        )}">
+                                </span>
+
+                                <span
+                                        th:unless="${finalized.finalizedDate != null}">
+
+                                    -
+
+                                </span>
+
+                            </td>
+
+
+                            <!-- ACTION -->
+
+                            <td class="text-center">
+
+                                <a
+                                        class="btn btn-sm btn-outline-primary"
+                                        th:href="@{/vendor/submission/{id}(
+                                            id=${finalized.quotationId},
+                                            vendorId=${vendorId}
+                                        )}">
+
+                                    <i class="bi bi-eye me-1"></i>
+
+                                    View
+
+                                </a>
+
+                            </td>
+
+
+                        </tr>
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</main>
+
+
+<!-- =========================
+     JQUERY
+========================== -->
+
+<script
+        src="https://code.jquery.com/jquery-3.7.1.min.js">
+</script>
+
+
+<!-- =========================
+     BOOTSTRAP JS
+========================== -->
+
+<script
+        src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js">
+</script>
+
+
+<!-- =========================
+     DATATABLES JS
+========================== -->
+
+<script
+        src="https://cdn.datatables.net/2.1.8/js/dataTables.min.js">
+</script>
+
+<script
+        src="https://cdn.datatables.net/2.1.8/js/dataTables.bootstrap5.min.js">
+</script>
+
+
+<!-- =========================
+     DATATABLE INITIALIZATION
+========================== -->
+
+<script th:inline="none">
+
+    $(document).ready(function () {
+
+        $('#finalizedQuotationTable').DataTable({
+
+            pageLength: 5,
+
+            lengthMenu: [
+                [5, 10, 25, 50, -1],
+                [5, 10, 25, 50, "All"]
+            ],
+
+            ordering: true,
+
+            searching: true,
+
+            paging: true,
+
+            info: true,
+
+            autoWidth: false,
+
+            order: [[0, 'desc']],
+
+            language: {
+
+                search: "",
+
+                searchPlaceholder: "Search...",
+
+                lengthMenu: "Show _MENU_ entries",
+
+                info: "Showing _START_ to _END_ of _TOTAL_ entries",
+
+                infoEmpty: "Showing 0 to 0 of 0 entries",
+
+                infoFiltered: "(filtered from _MAX_ total entries)",
+
+                zeroRecords: "No matching records found",
+
+                paginate: {
+
+                    previous: "Previous",
+
+                    next: "Next"
+
+                }
+
+            }
+
+        });
+
+    });
+
+</script>
+
+
+</body>
+
+</html>

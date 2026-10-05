@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>RFQ List - ForgeHub</title>
+
+    <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+            rel="stylesheet">
+
+    <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+            rel="stylesheet">
+
+    <link rel="stylesheet"
+          th:href="@{/css/admin.css}">
+
+    <style>
+        .page-title {
+            font-size: 25px;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .page-subtitle {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .rfq-card {
+            border: 0;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(15, 23, 42, .06);
+        }
+
+        .rfq-table th {
+            background: #f8fafc;
+            color: #475569;
+            font-size: 12px;
+            font-weight: 700;
+            white-space: nowrap;
+            padding: 13px 14px;
+        }
+
+        .rfq-table td {
+            font-size: 13px;
+            vertical-align: middle;
+            padding: 13px 14px;
+        }
+
+        .rfq-number {
+            font-weight: 700;
+            color: #1d4ed8;
+        }
+
+        .item-count {
+            display: inline-block;
+            min-width: 30px;
+            text-align: center;
+            padding: 4px 9px;
+            border-radius: 15px;
+            background: #eef2ff;
+            color: #4338ca;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .factory-code {
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 800;
+        }
+
+        .status-draft { background: #fef3c7; color: #92400e; }
+        .status-open { background: #dcfce7; color: #166534; }
+        .status-closed { background: #e5e7eb; color: #374151; }
+        .status-reopened { background: #dbeafe; color: #1d4ed8; }
+        .status-finalized { background: #ede9fe; color: #6d28d9; }
+        .status-inactive { background: #fee2e2; color: #b91c1c; }
+
+        .action-btn {
+            width: 33px;
+            height: 33px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 7px;
+            border: 0;
+            margin-right: 3px;
+        }
+
+        .view-btn { background: #e0f2fe; color: #0369a1; }
+        .edit-btn { background: #fef3c7; color: #b45309; }
+        .delete-btn { background: #fee2e2; color: #dc2626; }
+        .rebid-btn { background: #dbeafe; color: #1d4ed8; }
+
+        .action-btn:hover {
+            opacity: .82;
+        }
+
+        .product-table th {
+            background: #f8fafc;
+            white-space: nowrap;
+            font-size: 12px;
+        }
+
+        .product-table td {
+            font-size: 12px;
+            vertical-align: middle;
+        }
+
+        .generated-field {
+            background: #f1f5f9 !important;
+        }
+    </style>
+</head>
+
+<body>
+
+<div th:replace="~{fragments/admin-sidebar :: sidebar}"></div>
+
+<main class="admin-content">
+
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+        <div>
+            <h1 class="page-title mb-1">RFQ List</h1>
+            <div class="page-subtitle">Manage all Request for Quotations</div>
+        </div>
+
+        <a th:href="@{/admin/rfq/add}"
+           class="btn btn-primary">
+            <i class="bi bi-plus-circle me-1"></i>
+            Add RFQ
+        </a>
+    </div>
+
+    <div class="card rfq-card">
+
+        <div class="card-header bg-white border-0 p-3">
+            <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap">
+                <div class="small text-muted">
+                    Total RFQs:
+                    <strong th:text="${#lists.size(rfqs)}">0</strong>
+                </div>
+
+                <input type="text"
+                       id="searchInput"
+                       class="form-control"
+                       style="max-width:250px"
+                       placeholder="Search RFQ...">
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 rfq-table" id="rfqTable">
+
+                <thead>
+                <tr>
+                    <th>RFQ No</th>
+                    <th class="text-center">Item Count</th>
+                    <th>Factory</th>
+                    <th>Contact Person</th>
+                    <th>Bid Start Date</th>
+                    <th>Bid End Date</th>
+                    <th>Mobile No</th>
+                    <th>Status</th>
+                    <th class="text-center">Action</th>
+                </tr>
+                </thead>
+
+                <tbody>
+
+                <tr th:each="rfq : ${rfqs}">
+
+                    <td>
+                        <span class="rfq-number"
+                              th:text="${rfq.rfqNo}">
+                            RFQ-000001
+                        </span>
+                    </td>
+
+                    <td class="text-center">
+                        <span class="item-count"
+                              th:text="${rfq.items != null ? rfq.items.size() : 0}">
+                            0
+                        </span>
+                    </td>
+
+                    <td>
+                        <span th:if="${rfq.items != null and !rfq.items.isEmpty()}"
+                              class="factory-code"
+                              th:text="${rfq.items.get(0).factoryCode}">
+                            FAC-000001
+                        </span>
+                        <span th:if="${rfq.items == null or rfq.items.isEmpty()}"
+                              class="text-muted">-</span>
+                    </td>
+
+                    <td th:text="${rfq.contactPerson != null and !rfq.contactPerson.isBlank()
+                                  ? rfq.contactPerson : '-'}">
+                        -
+                    </td>
+
+                    <td>
+                        <span th:if="${rfq.bidDate != null}"
+                              th:text="${#temporals.format(rfq.bidDate, 'dd-MM-yyyy')}">
+                        </span>
+                        <span th:unless="${rfq.bidDate != null}"
+                              class="text-muted">-</span>
+                    </td>
+
+                    <td>
+                        <span th:if="${rfq.expiryDateOfBid != null}"
+                              th:text="${#temporals.format(rfq.expiryDateOfBid, 'dd-MM-yyyy')}">
+                        </span>
+                        <span th:unless="${rfq.expiryDateOfBid != null}"
+                              class="text-muted">-</span>
+                    </td>
+
+                    <td th:text="${rfq.mobile != null and !rfq.mobile.isBlank()
+                                  ? rfq.mobile : '-'}">
+                        -
+                    </td>
+
+                    <td>
+                        <span th:if="${rfq.deleted}"
+                              class="status-badge status-inactive">INACTIVE</span>
+
+                        <span th:if="${!rfq.deleted and rfq.status.name() == 'DRAFT'}"
+                              class="status-badge status-draft">DRAFT</span>
+
+                        <span th:if="${!rfq.deleted and rfq.status.name() == 'OPEN'}"
+                              class="status-badge status-open">OPEN</span>
+
+                        <span th:if="${!rfq.deleted and rfq.status.name() == 'CLOSED'}"
+                              class="status-badge status-closed">CLOSED</span>
+
+                        <span th:if="${!rfq.deleted and rfq.status.name() == 'REOPENED'}"
+                              class="status-badge status-reopened">REOPENED</span>
+
+                        <span th:if="${!rfq.deleted and rfq.status.name() == 'FINALIZED'}"
+                              class="status-badge status-finalized">FINALIZED</span>
+                    </td>
+
+                    <td class="text-center">
+
+                        <!-- VIEW -->
+                        <button type="button"
+                                class="action-btn view-btn"
+                                title="View RFQ"
+                                th:attr="data-rfq-id=${rfq.rfqId}"
+                                onclick="viewRFQ(this)">
+                            <i class="bi bi-eye"></i>
+                        </button>
+
+                        <!-- HEADER EDIT -->
+                        <button type="button"
+                                th:if="${!rfq.deleted}"
+                                class="action-btn edit-btn"
+                                title="Edit RFQ"
+                                th:attr="data-rfq-id=${rfq.rfqId}"
+                                onclick="openRFQEdit(this)">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+
+                        <!-- DELETE -->
+                        <button type="button"
+                                th:if="${!rfq.deleted}"
+                                class="action-btn delete-btn"
+                                title="Delete RFQ"
+                                th:attr="data-rfq-id=${rfq.rfqId}"
+                                onclick="confirmDelete(this)">
+                            <i class="bi bi-trash"></i>
+                        </button>
+
+                        <!-- OPEN TO REBID: ONLY CLOSED -->
+                        <button type="button"
+                                th:if="${!rfq.deleted and rfq.status.name() == 'CLOSED'}"
+                                class="action-btn rebid-btn"
+                                title="Open to Rebid"
+                                th:attr="data-rfq-id=${rfq.rfqId}"
+                                onclick="confirmRebid(this)">
+                            <i class="bi bi-arrow-repeat"></i>
+                        </button>
+
+                    </td>
+                </tr>
+
+                <tr th:if="${#lists.isEmpty(rfqs)}">
+                    <td colspan="9" class="text-center py-5 text-muted">
+                        <i class="bi bi-file-earmark-text fs-2 d-block mb-2"></i>
+                        No RFQs Found
+                    </td>
+                </tr>
+
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+
+
+<!-- =========================================================
+     VIEW RFQ MODAL
+========================================================= -->
+
+<div class="modal fade" id="viewRFQModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    RFQ Details -
+                    <span id="viewModalRfqNo"></span>
+                </h5>
+
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+
+                <div class="row g-3 mb-4">
+
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted">RFQ No</label>
+                        <input id="viewRfqNo"
+                               class="form-control"
+                               readonly>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted">Indent No</label>
+                        <input id="viewIndentNo"
+                               class="form-control"
+                               readonly>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted">Contact Person</label>
+                        <input id="viewContactPerson"
+                               class="form-control"
+                               readonly>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted">Mobile</label>
+                        <input id="viewMobile"
+                               class="form-control"
+                               readonly>
+                    </div>
+
+                </div>
+
+                <div class="table-responsive">
+
+                    <table class="table table-bordered product-table mb-0">
+
+                        <thead>
+                        <tr>
+                            <th>Line No</th>
+                            <th>Item No</th>
+                            <th>Item Name</th>
+                            <th>Required Qty</th>
+                            <th>UOM</th>
+                            <th>Required Delivery Date</th>
+                            <th>Delivery Location</th>
+                            <th>Factory Code</th>
+                            <th>Description</th>
+                            <th>Action</th>
+                        </tr>
+                        </thead>
+
+                        <tbody id="productTableBody"></tbody>
+
+                    </table>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- =========================================================
+     EDIT RFQ HEADER MODAL
+========================================================= -->
+
+<div class="modal fade" id="editRFQModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+            <form id="editRFQForm">
+
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit RFQ</h5>
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+
+                    <input type="hidden" id="editRfqId">
+
+                    <div class="mb-3">
+                        <label class="form-label">Contact Person</label>
+                        <input type="text"
+                               id="editContactPerson"
+                               class="form-control"
+                               required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Mobile</label>
+                        <input type="text"
+                               id="editMobile"
+                               class="form-control"
+                               required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Bid Start Date</label>
+                        <input type="date"
+                               id="editBidDate"
+                               class="form-control"
+                               required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Bid End Date</label>
+                        <input type="date"
+                               id="editExpiryDate"
+                               class="form-control"
+                               required>
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal">
+                        Cancel
+                    </button>
+
+                    <button type="submit"
+                            class="btn btn-primary">
+                        Save Changes
+                    </button>
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+</div>
+
+
+<!-- =========================================================
+     EDIT PRODUCT MODAL
+========================================================= -->
+
+<div class="modal fade" id="editProductModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+
+            <form id="editProductForm">
+
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Product</h5>
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+
+                    <input type="hidden" id="editItemId">
+
+                    <div class="row g-3 mb-3">
+
+                        <div class="col-md-4">
+                            <label class="form-label">Line No</label>
+                            <input id="editLineNo"
+                                   class="form-control generated-field"
+                                   readonly>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">Item No</label>
+                            <input id="editItemNo"
+                                   class="form-control generated-field"
+                                   readonly>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">Factory Code</label>
+                            <input id="editFactoryCode"
+                                   class="form-control generated-field"
+                                   readonly>
+                        </div>
+
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Item Name</label>
+                        <input id="editItemName"
+                               class="form-control"
+                               required>
+                    </div>
+
+                    <div class="row g-3">
+
+                        <div class="col-md-4">
+                            <label class="form-label">Required Quantity</label>
+                            <input type="number"
+                                   id="editReqQty"
+                                   class="form-control"
+                                   min="1"
+                                   required>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">UOM</label>
+                            <input id="editUom"
+                                   class="form-control"
+                                   required>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">Required Delivery Date</label>
+                            <input type="date"
+                                   id="editReqDeliveryDate"
+                                   class="form-control"
+                                   required>
+                        </div>
+
+                    </div>
+
+                    <div class="mb-3 mt-3">
+                        <label class="form-label">Delivery Location</label>
+                        <input id="editDeliveryLocation"
+                               class="form-control"
+                               required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea id="editDescription"
+                                  class="form-control"
+                                  rows="3"></textarea>
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+
+                    <button type="button"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal">
+                        Cancel
+                    </button>
+
+                    <button type="submit"
+                            class="btn btn-primary">
+                        Save Product
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+</div>
+
+
+<!-- =========================================================
+     DELETE MODAL
+========================================================= -->
+
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">Delete RFQ</h5>
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                Are you sure you want to delete this RFQ?
+                <div class="small text-muted mt-1">
+                    The RFQ will remain in the list as INACTIVE.
+                </div>
+            </div>
+
+            <div class="modal-footer">
+
+                <button type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal">
+                    Cancel
+                </button>
+
+                <button type="button"
+                        id="confirmDeleteBtn"
+                        class="btn btn-danger">
+                    Delete
+                </button>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- =========================================================
+     REBID MODAL
+========================================================= -->
+
+<div class="modal fade" id="rebidModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">Open to Rebid</h5>
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+
+                Are you sure you want to open this CLOSED RFQ
+                for rebidding?
+
+                <div class="small text-muted mt-2">
+                    The RFQ status will change from
+                    <strong>CLOSED</strong> to
+                    <strong>REOPENED</strong>.
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+
+                <button type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal">
+                    Cancel
+                </button>
+
+                <button type="button"
+                        id="confirmRebidBtn"
+                        class="btn btn-primary">
+                    Open to Rebid
+                </button>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script
+        src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js">
+</script>
+
+<script>
+
+    let currentRFQId = null;
+    let selectedRFQId = null;
+
+    const viewModal =
+        new bootstrap.Modal(
+            document.getElementById("viewRFQModal")
+        );
+
+    const editRFQModal =
+        new bootstrap.Modal(
+            document.getElementById("editRFQModal")
+        );
+
+    const editProductModal =
+        new bootstrap.Modal(
+            document.getElementById("editProductModal")
+        );
+
+    const deleteModal =
+        new bootstrap.Modal(
+            document.getElementById("deleteModal")
+        );
+
+    const rebidModal =
+        new bootstrap.Modal(
+            document.getElementById("rebidModal")
+        );
+
+
+    // =========================================================
+    // VIEW RFQ
+    // =========================================================
+
+    function viewRFQ(button) {
+
+        currentRFQId =
+            button.getAttribute("data-rfq-id");
+
+        fetch(`/admin/rfq/details/${currentRFQId}`)
+            .then(response => {
+
+                if (!response.ok) {
+                    throw new Error("Unable to load RFQ");
+                }
+
+                return response.json();
+            })
+            .then(data => {
+
+                document.getElementById("viewModalRfqNo").textContent =
+                    data.rfqNo || "";
+
+                document.getElementById("viewRfqNo").value =
+                    data.rfqNo || "";
+
+                document.getElementById("viewIndentNo").value =
+                    data.indentNo || "";
+
+                document.getElementById("viewContactPerson").value =
+                    data.contactPerson || "";
+
+                document.getElementById("viewMobile").value =
+                    data.mobile || "";
+
+                renderProducts(data);
+
+                viewModal.show();
+            })
+            .catch(error => {
+
+                console.error(error);
+                alert("Unable to load RFQ details.");
+
+            });
+    }
+
+
+    function renderProducts(data) {
+
+        const tbody =
+            document.getElementById("productTableBody");
+
+        tbody.innerHTML = "";
+
+        if (!data.items || data.items.length === 0) {
+
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="10"
+                        class="text-center text-muted py-4">
+                        No products found.
+                    </td>
+                </tr>
+            `;
+
+            return;
+        }
+
+        data.items.forEach(item => {
+
+            const tr =
+                document.createElement("tr");
+
+            const editButton =
+                data.deleted
+                    ? `<button type="button"
+                               class="btn btn-sm btn-outline-secondary"
+                               disabled>
+                           <i class="bi bi-lock"></i>
+                       </button>`
+                    : `<button type="button"
+                               class="btn btn-sm btn-outline-warning"
+                               title="Edit Product"
+                               onclick='openProductEdit(${JSON.stringify(item)})'>
+                           <i class="bi bi-pencil"></i>
+                       </button>`;
+
+            tr.innerHTML = `
+                <td>${escapeHtml(item.rfqLineNo ?? "-")}</td>
+                <td>${escapeHtml(item.itemNo ?? "-")}</td>
+                <td>${escapeHtml(item.itemName ?? "-")}</td>
+                <td>${escapeHtml(item.reqQty ?? "-")}</td>
+                <td>${escapeHtml(item.uom ?? "-")}</td>
+                <td>${escapeHtml(item.reqDeliveryDate ?? "-")}</td>
+                <td>${escapeHtml(item.deliveryLocation ?? "-")}</td>
+                <td>${escapeHtml(item.factoryCode ?? "-")}</td>
+                <td>${escapeHtml(item.description ?? "-")}</td>
+                <td>${editButton}</td>
+            `;
+
+            tbody.appendChild(tr);
+        });
+    }
+
+
+    // =========================================================
+    // EDIT RFQ HEADER
+    // =========================================================
+
+    function openRFQEdit(button) {
+
+        const id =
+            button.getAttribute("data-rfq-id");
+
+        fetch(`/admin/rfq/details/${id}`)
+            .then(response => response.json())
+            .then(data => {
+
+                document.getElementById("editRfqId").value =
+                    data.rfqId;
+
+                document.getElementById("editContactPerson").value =
+                    data.contactPerson || "";
+
+                document.getElementById("editMobile").value =
+                    data.mobile || "";
+
+                document.getElementById("editBidDate").value =
+                    data.bidDate
+                        ? data.bidDate.substring(0, 10)
+                        : "";
+
+                document.getElementById("editExpiryDate").value =
+                    data.expiryDateOfBid
+                        ? data.expiryDateOfBid.substring(0, 10)
+                        : "";
+
+                editRFQModal.show();
+            });
+    }
+
+
+    document.getElementById("editRFQForm")
+        .addEventListener("submit", function (event) {
+
+            event.preventDefault();
+
+            const id =
+                document.getElementById("editRfqId").value;
+
+            const form =
+                document.createElement("form");
+
+            form.method = "POST";
+            form.action = `/admin/rfq/update/${id}`;
+
+            addHidden(form, "contactPerson",
+                document.getElementById("editContactPerson").value);
+
+            addHidden(form, "mobile",
+                document.getElementById("editMobile").value);
+
+            addHidden(form, "bidDate",
+                document.getElementById("editBidDate").value);
+
+            addHidden(form, "expiryDateOfBid",
+                document.getElementById("editExpiryDate").value);
+
+            addHidden(form, "action", "submit");
+
+            document.body.appendChild(form);
+            form.submit();
+        });
+
+
+    // =========================================================
+    // EDIT PRODUCT
+    // =========================================================
+
+    function openProductEdit(item) {
+
+        document.getElementById("editItemId").value =
+            item.itemId;
+
+        document.getElementById("editLineNo").value =
+            item.rfqLineNo || "";
+
+        document.getElementById("editItemNo").value =
+            item.itemNo || "";
+
+        document.getElementById("editFactoryCode").value =
+            item.factoryCode || "";
+
+        document.getElementById("editItemName").value =
+            item.itemName || "";
+
+        document.getElementById("editReqQty").value =
+            item.reqQty || "";
+
+        document.getElementById("editUom").value =
+            item.uom || "";
+
+        document.getElementById("editReqDeliveryDate").value =
+            item.reqDeliveryDate || "";
+
+        document.getElementById("editDeliveryLocation").value =
+            item.deliveryLocation || "";
+
+        document.getElementById("editDescription").value =
+            item.description || "";
+
+        editProductModal.show();
+    }
+
+
+    document.getElementById("editProductForm")
+        .addEventListener("submit", function (event) {
+
+            event.preventDefault();
+
+            const params = new URLSearchParams();
+
+            params.append(
+                "itemId",
+                document.getElementById("editItemId").value
+            );
+
+            params.append(
+                "itemName",
+                document.getElementById("editItemName").value
+            );
+
+            params.append(
+                "reqQty",
+                document.getElementById("editReqQty").value
+            );
+
+            params.append(
+                "uom",
+                document.getElementById("editUom").value
+            );
+
+            params.append(
+                "reqDeliveryDate",
+                document.getElementById("editReqDeliveryDate").value
+            );
+
+            params.append(
+                "deliveryLocation",
+                document.getElementById("editDeliveryLocation").value
+            );
+
+            params.append(
+                "description",
+                document.getElementById("editDescription").value
+            );
+
+            fetch("/admin/rfq/item/update", {
+                method: "POST",
+                headers: {
+                    "Content-Type":
+                        "application/x-www-form-urlencoded"
+                },
+                body: params.toString()
+            })
+                .then(response => {
+
+                    if (!response.ok) {
+                        throw new Error("Product update failed");
+                    }
+
+                    return response.text();
+                })
+                .then(result => {
+
+                    if (result !== "success") {
+                        throw new Error("Product update failed");
+                    }
+
+                    editProductModal.hide();
+
+                    return fetch(
+                        `/admin/rfq/details/${currentRFQId}`
+                    );
+                })
+                .then(response => response.json())
+                .then(data => renderProducts(data))
+                .catch(error => {
+
+                    console.error(error);
+                    alert("Unable to update product.");
+
+                });
+        });
+
+
+    // =========================================================
+    // DELETE
+    // =========================================================
+
+    function confirmDelete(button) {
+
+        selectedRFQId =
+            button.getAttribute("data-rfq-id");
+
+        deleteModal.show();
+    }
+
+
+    document.getElementById("confirmDeleteBtn")
+        .addEventListener("click", function () {
+
+            const form =
+                document.createElement("form");
+
+            form.method = "POST";
+            form.action =
+                `/admin/rfq/delete/${selectedRFQId}`;
+
+            document.body.appendChild(form);
+            form.submit();
+        });
+
+
+    // =========================================================
+    // OPEN TO REBID
+    // =========================================================
+
+    function confirmRebid(button) {
+
+        selectedRFQId =
+            button.getAttribute("data-rfq-id");
+
+        rebidModal.show();
+    }
+
+
+    document.getElementById("confirmRebidBtn")
+        .addEventListener("click", function () {
+
+            const form =
+                document.createElement("form");
+
+            form.method = "POST";
+            form.action =
+                `/admin/rfq/rebid/${selectedRFQId}`;
+
+            document.body.appendChild(form);
+            form.submit();
+        });
+
+
+    // =========================================================
+    // SEARCH
+    // =========================================================
+
+    document.getElementById("searchInput")
+        .addEventListener("keyup", function () {
+
+            const searchText =
+                this.value.toLowerCase();
+
+            document.querySelectorAll(
+                "#rfqTable tbody tr"
+            ).forEach(row => {
+
+                row.style.display =
+                    row.innerText
+                        .toLowerCase()
+                        .includes(searchText)
+                        ? ""
+                        : "none";
+            });
+        });
+
+
+    // =========================================================
+    // HELPERS
+    // =========================================================
+
+    function addHidden(form, name, value) {
+
+        const input =
+            document.createElement("input");
+
+        input.type = "hidden";
+        input.name = name;
+        input.value = value ?? "";
+
+        form.appendChild(input);
+    }
+
+
+    function escapeHtml(value) {
+
+        return String(value)
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#039;");
+    }
+
+</script>
+
+</body>
+</html>
