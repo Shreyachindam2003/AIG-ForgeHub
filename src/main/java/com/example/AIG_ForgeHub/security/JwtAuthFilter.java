@@ -27,7 +27,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request,HttpServletResponse response,FilterChain filterChain) throws ServletException,IOException {
+    protected void doFilterInternal(HttpServletRequest request,HttpServletResponse response
+            ,FilterChain filterChain) throws ServletException,IOException {
 
         String token=getAccessTokenFromCookie(request);
 

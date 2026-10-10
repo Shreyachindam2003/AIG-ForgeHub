@@ -10882,3 +10882,42 @@ org.springframework.web.servlet.resource.NoResourceFoundException: No static res
 2026-10-05T00:53:25.216+05:30  INFO 23556 --- [AIG-ForgeHub] [SpringApplicationShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
 2026-10-05T00:53:25.226+05:30  INFO 23556 --- [AIG-ForgeHub] [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
 2026-10-05T00:53:25.243+05:30  INFO 23556 --- [AIG-ForgeHub] [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
+2026-10-05T19:28:10.398+05:30  INFO 9292 --- [AIG-ForgeHub] [main] c.e.AIG_ForgeHub.AigForgeHubApplication  : Starting AigForgeHubApplication using Java 21.0.11 with PID 9292 (C:\Users\Saikiran\Downloads\AIG-ForgeHub\target\classes started by Saikiran in C:\Users\Saikiran\Downloads\AIG-ForgeHub)
+2026-10-05T19:28:10.402+05:30  INFO 9292 --- [AIG-ForgeHub] [main] c.e.AIG_ForgeHub.AigForgeHubApplication  : No active profile set, falling back to 1 default profile: "default"
+2026-10-05T19:28:11.167+05:30  INFO 9292 --- [AIG-ForgeHub] [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-10-05T19:28:11.258+05:30  INFO 9292 --- [AIG-ForgeHub] [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 79 ms. Found 6 JPA repository interfaces.
+2026-10-05T19:28:11.842+05:30  INFO 9292 --- [AIG-ForgeHub] [main] o.s.boot.tomcat.TomcatWebServer          : Tomcat initialized with port 8080 (http)
+2026-10-05T19:28:11.858+05:30  INFO 9292 --- [AIG-ForgeHub] [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-10-05T19:28:11.859+05:30  INFO 9292 --- [AIG-ForgeHub] [main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/11.0.24]
+2026-10-05T19:28:11.929+05:30  INFO 9292 --- [AIG-ForgeHub] [main] b.w.c.s.WebApplicationContextInitializer : Root WebApplicationContext: initialization completed in 1478 ms
+2026-10-05T19:28:11.945+05:30  INFO 9292 --- [AIG-ForgeHub] [main] c.e.AIG_ForgeHub.security.JwtService     : JwtService initialized successfully
+2026-10-05T19:28:12.128+05:30  INFO 9292 --- [AIG-ForgeHub] [main] org.hibernate.orm.jpa                    : HHH008540: Processing PersistenceUnitInfo [name: default]
+2026-10-05T19:28:12.200+05:30  INFO 9292 --- [AIG-ForgeHub] [main] org.hibernate.orm.core                   : HHH000001: Hibernate ORM core version 7.4.5.Final
+2026-10-05T19:28:12.670+05:30  INFO 9292 --- [AIG-ForgeHub] [main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-10-05T19:28:12.705+05:30  INFO 9292 --- [AIG-ForgeHub] [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-10-05T19:28:13.244+05:30  INFO 9292 --- [AIG-ForgeHub] [main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@2361365c
+2026-10-05T19:28:13.248+05:30  INFO 9292 --- [AIG-ForgeHub] [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-10-05T19:28:13.407+05:30  INFO 9292 --- [AIG-ForgeHub] [main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [jdbc:mysql://localhost:3306/forgehub]
+	Database driver: MySQL Connector/J
+	Database dialect: MySQLDialect
+	Database version: 8.0.42
+	Default catalog/schema: forgehub/undefined
+	Autocommit mode: undefined/unknown
+	Isolation level: REPEATABLE_READ [default REPEATABLE_READ]
+	JDBC fetch size: none
+	Pool: DataSourceConnectionProvider
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-10-05T19:28:14.775+05:30  INFO 9292 --- [AIG-ForgeHub] [main] org.hibernate.orm.core                   : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-10-05T19:28:14.788+05:30  INFO 9292 --- [AIG-ForgeHub] [main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-10-05T19:28:14.910+05:30  INFO 9292 --- [AIG-ForgeHub] [main] o.s.d.j.r.query.QueryEnhancerFactories   : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-10-05T19:28:16.489+05:30  WARN 9292 --- [AIG-ForgeHub] [main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-10-05T19:28:16.514+05:30  INFO 9292 --- [AIG-ForgeHub] [main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name customUserDetailsService
+2026-10-05T19:28:16.947+05:30  INFO 9292 --- [AIG-ForgeHub] [main] o.s.boot.tomcat.TomcatWebServer          : Tomcat started on port 8080 (http) with context path '/'
+2026-10-05T19:28:16.951+05:30  INFO 9292 --- [AIG-ForgeHub] [main] c.e.AIG_ForgeHub.AigForgeHubApplication  : Started AigForgeHubApplication in 7.121 seconds (process running for 7.858)
+2026-10-05T19:30:58.256+05:30  INFO 9292 --- [AIG-ForgeHub] [SpringApplicationShutdownHook] o.s.boot.tomcat.GracefulShutdown         : Commencing graceful shutdown. Waiting for active requests to complete
+2026-10-05T19:30:58.268+05:30  INFO 9292 --- [AIG-ForgeHub] [tomcat-shutdown] o.s.boot.tomcat.GracefulShutdown         : Graceful shutdown complete
+2026-10-05T19:30:58.276+05:30  INFO 9292 --- [AIG-ForgeHub] [SpringApplicationShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-10-05T19:30:58.282+05:30  INFO 9292 --- [AIG-ForgeHub] [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2026-10-05T19:30:58.294+05:30  INFO 9292 --- [AIG-ForgeHub] [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.

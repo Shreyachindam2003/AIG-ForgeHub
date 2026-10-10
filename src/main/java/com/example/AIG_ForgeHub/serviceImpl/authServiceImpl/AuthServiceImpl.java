@@ -1,4 +1,4 @@
-package com.example.AIG_ForgeHub.serviceImpl;
+package com.example.AIG_ForgeHub.serviceImpl.authServiceImpl;
 
 import com.example.AIG_ForgeHub.dto.authDto.LoginRequest;
 import com.example.AIG_ForgeHub.dto.authDto.LoginResponse;

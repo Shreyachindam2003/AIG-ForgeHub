@@ -1,4 +1,4 @@
-package com.example.AIG_ForgeHub.serviceImpl;
+package com.example.AIG_ForgeHub.serviceImpl.authServiceImpl;
 
 import com.example.AIG_ForgeHub.entity.User;
 import com.example.AIG_ForgeHub.repository.UserRepository;

@@ -1,4 +1,4 @@
-package com.example.AIG_ForgeHub.controller;
+package com.example.AIG_ForgeHub.controller.authController;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;

@@ -1,7 +1,7 @@
 package com.example.AIG_ForgeHub.config;
 
 import com.example.AIG_ForgeHub.security.JwtAuthFilter;
-import com.example.AIG_ForgeHub.serviceImpl.CustomUserDetailsService;
+import com.example.AIG_ForgeHub.serviceImpl.authServiceImpl.CustomUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;

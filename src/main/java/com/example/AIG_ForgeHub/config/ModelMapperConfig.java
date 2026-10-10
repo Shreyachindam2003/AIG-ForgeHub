@@ -23,21 +23,7 @@ public class ModelMapperConfig {
         ModelMapper modelMapper=new ModelMapper();
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        TypeMap<User,UserResponseDto> userMap=
+        /*TypeMap<User,UserResponseDto> userMap=
                 modelMapper.createTypeMap(User.class,UserResponseDto.class);
 
         userMap.addMapping(User::getUserId,UserResponseDto::setUserId);
@@ -85,7 +71,7 @@ public class ModelMapperConfig {
             );
 
             return destination;
-        });
+        });*/
 
         return modelMapper;
     }

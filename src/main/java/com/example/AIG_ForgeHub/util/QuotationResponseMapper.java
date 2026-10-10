@@ -1,3 +1,4 @@
+
 package com.example.AIG_ForgeHub.util;
 
 import com.example.AIG_ForgeHub.dto.dashboardDto.*;
@@ -22,173 +23,189 @@ import java.util.List;
 @RequiredArgsConstructor
 public class QuotationResponseMapper {
 
-    private static final String QUOTATION_JSON_PREFIX="FORGEHUB_QUOTATION_V1:";
+    private static final String QUOTATION_JSON_PREFIX = "FORGEHUB_QUOTATION_V1:";
 
     private final ObjectMapper objectMapper;
-
     private final ModelMapper modelMapper;
 
     public RFQItemResponseDto toRFQItemResponse(RFQItem item) {
-        return item==null ? null : modelMapper.map(item,RFQItemResponseDto.class);
+        return item == null
+                ? null
+                : modelMapper.map(item, RFQItemResponseDto.class);
     }
 
-    public VendorQuotationResponseDto toVendorQuotationResponse(RFQQuotation quotation) {
+    public VendorQuotationResponseDto toVendorQuotationResponse(
+            RFQQuotation quotation) {
 
-        if(quotation==null) {
+        if (quotation == null) {
             return null;
         }
 
-        ParsedQuotation parsed=parseQuotation(quotation);
+        ParsedQuotation parsed = parseQuotation(quotation);
 
-        List<VendorQuotationHistory> history=new ArrayList<>();
+        VendorQuotationResponseDto dto =
+                modelMapper.map(quotation, VendorQuotationResponseDto.class);
 
-        history.add(new VendorQuotationHistory(
+        RFQ rfq = quotation.getRfq();
+
+        dto.setQuotationId(quotation.getQuotationId());
+        dto.setBidNo(quotation.getBidNo());
+        dto.setRfqId(rfq != null ? rfq.getRfqId() : null);
+        dto.setRfqNo(rfq != null ? rfq.getRfqNo() : null);
+        dto.setIndentNo(rfq != null ? rfq.getIndentNo() : null);
+
+        dto.setVendorId(quotation.getVendor() != null
+                ? quotation.getVendor().getUserId() : null);
+
+        dto.setVendorName(quotation.getVendor() != null
+                ? quotation.getVendor().getFullName() : null);
+
+        dto.setVendorEmail(quotation.getVendor() != null
+                ? quotation.getVendor().getEmail() : null);
+
+        dto.setQuotedAmount(quotation.getQuotedAmount());
+        dto.setSubtotal(parsed.subtotal());
+        dto.setGstRate(parsed.gstRate());
+        dto.setGstAmount(parsed.gstAmount());
+        dto.setGrandTotal(parsed.grandTotal());
+        dto.setDeliveryDate(quotation.getDeliveryDate());
+        dto.setPaymentTerms(quotation.getPaymentTerms());
+        dto.setStatus(quotation.getStatus());
+        dto.setSubmittedDate(quotation.getSubmittedDate());
+        dto.setItems(parsed.items());
+
+        dto.setHistory(List.of(new VendorQuotationHistory(
                 "Quotation Submitted",
                 "CURRENT",
                 quotation.getQuotedAmount(),
                 quotation.getSubmittedDate(),
                 quotation.getStatus()
-        ));
+        )));
 
-        return VendorQuotationResponseDto.builder()
-                .quotationId(quotation.getQuotationId())
-                .bidNo(quotation.getBidNo())
-                .rfqId(quotation.getRfq()!=null?quotation.getRfq().getRfqId():null)
-                .rfqNo(quotation.getRfq()!=null?quotation.getRfq().getRfqNo():null)
-                .indentNo(quotation.getRfq()!=null?quotation.getRfq().getIndentNo():null)
-                .vendorId(quotation.getVendor()!=null?quotation.getVendor().getUserId():null)
-                .vendorName(quotation.getVendor()!=null?quotation.getVendor().getFullName():null)
-                .vendorEmail(quotation.getVendor()!=null?quotation.getVendor().getEmail():null)
-                .quotedAmount(quotation.getQuotedAmount())
-                .subtotal(parsed.subtotal())
-                .gstRate(parsed.gstRate())
-                .gstAmount(parsed.gstAmount())
-                .grandTotal(parsed.grandTotal())
-                .deliveryDate(quotation.getDeliveryDate())
-                .paymentTerms(quotation.getPaymentTerms())
-                .status(quotation.getStatus())
-                .submittedDate(quotation.getSubmittedDate())
-                .items(parsed.items())
-                .history(history)
-                .build();
+        return dto;
     }
 
-    public FinalizedQuotationResponseDto toFinalizedQuotationResponse(FinalizedQuotation finalized) {
+    public FinalizedQuotationResponseDto toFinalizedQuotationResponse(
+            FinalizedQuotation finalized) {
 
-        if(finalized==null) {
+        if (finalized == null) {
             return null;
         }
 
-        RFQ rfq=finalized.getRfq();
+        FinalizedQuotationResponseDto dto =
+                modelMapper.map(finalized, FinalizedQuotationResponseDto.class);
 
-        RFQQuotation quotation=finalized.getQuotation();
+        RFQ rfq = finalized.getRfq();
+        RFQQuotation quotation = finalized.getQuotation();
 
-        List<RFQItemResponseDto> items=new ArrayList<>();
+        dto.setFinalId(finalized.getFinalId());
+        dto.setRfqNo(rfq != null ? rfq.getRfqNo() : null);
+        dto.setIndentNo(rfq != null ? rfq.getIndentNo() : null);
+        dto.setFinalizedDate(finalized.getFinalizedDate());
 
-        if(rfq!=null && rfq.getItems()!=null) {
+        List<RFQItemResponseDto> items = new ArrayList<>();
 
-            for(RFQItem item:rfq.getItems()) {
+        if (rfq != null && rfq.getItems() != null) {
+            for (RFQItem item : rfq.getItems()) {
                 items.add(toRFQItemResponse(item));
             }
         }
 
-        return FinalizedQuotationResponseDto.builder()
-                .finalId(finalized.getFinalId())
-                .rfqNo(rfq!=null?rfq.getRfqNo():null)
-                .indentNo(rfq!=null?rfq.getIndentNo():null)
-                .items(items)
-                .vendorName(quotation!=null && quotation.getVendor()!=null?quotation.getVendor().getFullName():null)
-                .quotationId(quotation!=null?quotation.getQuotationId():null)
-                .bidNo(quotation!=null?quotation.getBidNo():null)
-                .quotedAmount(quotation!=null?quotation.getQuotedAmount():null)
-                .finalizedDate(finalized.getFinalizedDate())
-                .build();
+        dto.setItems(items);
+
+        dto.setVendorName(quotation != null && quotation.getVendor() != null
+                ? quotation.getVendor().getFullName() : null);
+
+        dto.setQuotationId(quotation != null
+                ? quotation.getQuotationId() : null);
+
+        dto.setBidNo(quotation != null
+                ? quotation.getBidNo() : null);
+
+        dto.setQuotedAmount(quotation != null
+                ? quotation.getQuotedAmount() : null);
+
+        return dto;
     }
 
     private ParsedQuotation parseQuotation(RFQQuotation quotation) {
 
-        BigDecimal grandTotal=quotation.getQuotedAmount()==null
-                ?BigDecimal.ZERO
-                :quotation.getQuotedAmount();
+        BigDecimal grandTotal = quotation.getQuotedAmount() != null
+                ? quotation.getQuotedAmount()
+                : BigDecimal.ZERO;
 
-        BigDecimal subtotal=BigDecimal.ZERO;
+        BigDecimal subtotal = BigDecimal.ZERO;
+        BigDecimal gstAmount = BigDecimal.ZERO;
+        BigDecimal gstRate = new BigDecimal("10");
 
-        BigDecimal gstAmount=BigDecimal.ZERO;
+        String remarks = quotation.getRemarks();
 
-        BigDecimal gstRate=new BigDecimal("10");
+        List<VendorQuotationItemResponseDto> items = new ArrayList<>();
 
-        String remarks=quotation.getRemarks();
+        String stored = quotation.getRemarks();
 
-        List<VendorQuotationItemResponseDto> items=new ArrayList<>();
-
-        String stored=quotation.getRemarks();
-
-        if(stored!=null && stored.startsWith(QUOTATION_JSON_PREFIX)) {
+        if (stored != null && stored.startsWith(QUOTATION_JSON_PREFIX)) {
 
             try {
-
-                JsonNode root=objectMapper.readTree(
+                JsonNode root = objectMapper.readTree(
                         stored.substring(QUOTATION_JSON_PREFIX.length())
                 );
 
-                if(root.has("subtotal")) {
-                    subtotal=root.get("subtotal").decimalValue();
+                if (root.has("subtotal")) {
+                    subtotal = root.get("subtotal").decimalValue();
                 }
 
-                if(root.has("gstAmount")) {
-                    gstAmount=root.get("gstAmount").decimalValue();
+                if (root.has("gstAmount")) {
+                    gstAmount = root.get("gstAmount").decimalValue();
                 }
 
-                if(root.has("grandTotal")) {
-                    grandTotal=root.get("grandTotal").decimalValue();
+                if (root.has("grandTotal")) {
+                    grandTotal = root.get("grandTotal").decimalValue();
                 }
 
-                if(root.has("gstRate")) {
-                    gstRate=root.get("gstRate").decimalValue();
+                if (root.has("gstRate")) {
+                    gstRate = root.get("gstRate").decimalValue();
                 }
 
-                if(root.has("remarks") && !root.get("remarks").isNull()) {
-                    remarks=root.get("remarks").asText();
+                if (root.has("remarks") && !root.get("remarks").isNull()) {
+                    remarks = root.get("remarks").asText();
                 }
 
-                JsonNode itemNodes=root.get("items");
+                JsonNode itemNodes = root.get("items");
 
-                if(itemNodes!=null && itemNodes.isArray()) {
+                if (itemNodes != null && itemNodes.isArray()) {
 
-                    for(JsonNode item:itemNodes) {
+                    for (JsonNode item : itemNodes) {
 
-                        BigDecimal itemSubtotal=
-                                item.has("itemSubtotal")
-                                        ?item.get("itemSubtotal").decimalValue()
-                                        :BigDecimal.ZERO;
+                        BigDecimal itemSubtotal = item.has("itemSubtotal")
+                                ? item.get("itemSubtotal").decimalValue()
+                                : BigDecimal.ZERO;
 
-                        BigDecimal lineSubtotal=
-                                item.has("subtotal")
-                                        ?item.get("subtotal").decimalValue()
-                                        :itemSubtotal;
+                        BigDecimal lineSubtotal = item.has("subtotal")
+                                ? item.get("subtotal").decimalValue()
+                                : itemSubtotal;
 
-                        BigDecimal unitPrice=
-                                item.has("unitPrice")
-                                        ?item.get("unitPrice").decimalValue()
-                                        :BigDecimal.ZERO;
+                        BigDecimal unitPrice = item.has("unitPrice")
+                                ? item.get("unitPrice").decimalValue()
+                                : BigDecimal.ZERO;
 
-                        items.add(
-                                VendorQuotationItemResponseDto.builder()
-                                        .itemId(item.path("itemId").asLong())
-                                        .itemName(item.path("itemName").asText("-"))
-                                        .requiredQty(item.path("requiredQty").asInt())
-                                        .availableQty(item.path("availableQty").asInt())
-                                        .uom(item.path("uom").asText("-"))
-                                        .unitPrice(unitPrice)
-                                        .itemSubtotal(itemSubtotal)
-                                        .subtotal(lineSubtotal)
-                                        .build()
-                        );
+                        VendorQuotationItemResponseDto itemDto =
+                                new VendorQuotationItemResponseDto();
+
+                        itemDto.setItemId(item.path("itemId").asLong());
+                        itemDto.setItemName(item.path("itemName").asText("-"));
+                        itemDto.setRequiredQty(item.path("requiredQty").asInt());
+                        itemDto.setAvailableQty(item.path("availableQty").asInt());
+                        itemDto.setUom(item.path("uom").asText("-"));
+                        itemDto.setUnitPrice(unitPrice);
+                        itemDto.setItemSubtotal(itemSubtotal);
+                        itemDto.setSubtotal(lineSubtotal);
+
+                        items.add(itemDto);
                     }
                 }
 
-            } catch(Exception ex) {
-
+            } catch (Exception ex) {
                 log.warn(
                         "Unable to parse stored quotation details for quotationId={}",
                         quotation.getQuotationId(),

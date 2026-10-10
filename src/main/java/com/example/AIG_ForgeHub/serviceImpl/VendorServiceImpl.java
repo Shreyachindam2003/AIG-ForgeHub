@@ -120,6 +120,27 @@ public class VendorServiceImpl implements VendorService {
 
     @Override
     @Transactional
+    public List<VendorQuotationResponseDto> getMySubmissions(Long vendorId) {
+        getVendorEntity(vendorId);
+
+        List<VendorQuotationResponseDto> responseList=new ArrayList<>();
+
+        List<RFQQuotation> quotations=rfqQuotationRepository
+                .findByVendor_UserIdOrderBySubmittedDateDesc(vendorId);
+
+        for(RFQQuotation quotation:quotations) {
+            if(quotation.getRfq()!=null&&quotation.getRfq().getItems()!=null) {
+                quotation.getRfq().getItems().size();
+            }
+
+            responseList.add(quotationResponseMapper.toVendorQuotationResponse(quotation));
+        }
+
+        return responseList;
+    }
+
+    @Override
+    @Transactional
     public void submitQuotation(Long rfqId, Long vendorId, VendorQuotationRequest request) {
         User vendor=getVendorEntity(vendorId);
         RFQ rfq=getAssignedRfqEntity(rfqId,vendorId);
@@ -224,26 +245,7 @@ public class VendorServiceImpl implements VendorService {
         rfqQuotationRepository.save(quotation);
     }
 
-    @Override
-    @Transactional
-    public List<VendorQuotationResponseDto> getMySubmissions(Long vendorId) {
-        getVendorEntity(vendorId);
 
-        List<VendorQuotationResponseDto> responseList=new ArrayList<>();
-
-        List<RFQQuotation> quotations=rfqQuotationRepository
-                .findByVendor_UserIdOrderBySubmittedDateDesc(vendorId);
-
-        for(RFQQuotation quotation:quotations) {
-            if(quotation.getRfq()!=null&&quotation.getRfq().getItems()!=null) {
-                quotation.getRfq().getItems().size();
-            }
-
-            responseList.add(quotationResponseMapper.toVendorQuotationResponse(quotation));
-        }
-
-        return responseList;
-    }
 
     @Override
     @Transactional
@@ -320,6 +322,24 @@ public class VendorServiceImpl implements VendorService {
 
     @Override
     @Transactional
+    public List<FinalizedQuotationResponseDto> getAllFinalizedQuotations() {
+        List<FinalizedQuotationResponseDto> responseList=new ArrayList<>();
+
+        List<FinalizedQuotation> quotations=finalizedQuotationRepository.findAllByOrderByFinalizedDateDesc();
+
+        for(FinalizedQuotation quotation:quotations) {
+            if(quotation.getRfq()!=null&&quotation.getRfq().getItems()!=null) {
+                quotation.getRfq().getItems().size();
+            }
+
+            responseList.add(quotationResponseMapper.toFinalizedQuotationResponse(quotation));
+        }
+
+        return responseList;
+    }
+
+    @Override
+    @Transactional
     public void finalizeQuotation(Long quotationId) {
         RFQQuotation selectedQuotation=getQuotationEntityForAdmin(quotationId);
 
@@ -364,21 +384,5 @@ public class VendorServiceImpl implements VendorService {
         finalizedQuotationRepository.save(finalized);
     }
 
-    @Override
-    @Transactional
-    public List<FinalizedQuotationResponseDto> getAllFinalizedQuotations() {
-        List<FinalizedQuotationResponseDto> responseList=new ArrayList<>();
 
-        List<FinalizedQuotation> quotations=finalizedQuotationRepository.findAllByOrderByFinalizedDateDesc();
-
-        for(FinalizedQuotation quotation:quotations) {
-            if(quotation.getRfq()!=null&&quotation.getRfq().getItems()!=null) {
-                quotation.getRfq().getItems().size();
-            }
-
-            responseList.add(quotationResponseMapper.toFinalizedQuotationResponse(quotation));
-        }
-
-        return responseList;
-    }
 }

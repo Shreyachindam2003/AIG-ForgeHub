@@ -32,18 +32,19 @@ public class RFQServiceImpl implements RFQService {
     private final UserRepository userRepository;
     private final ModelMapper modelMapper;
 
-    @Override
     public String generateRfqNo() {
-        long nextNumber=rfqRepository.count()+1;
-        return String.format("RFQ-%06d",nextNumber);
+        return generateNumber("RFQ");
     }
 
-    @Override
     public String generateIndentNo() {
-        long nextNumber=rfqRepository.count()+1;
-        return String.format("IND-%06d",nextNumber);
+        return generateNumber("IND");
     }
 
+    private String generateNumber(String prefix) {
+        return String.format(
+                "%s-%06d", prefix, rfqRepository.count() + 1
+        );
+    }
     @Override
     @Transactional
     public void saveRfq(RFQCreateRequest request,Long adminUserId,boolean draft) {
@@ -105,14 +106,7 @@ public class RFQServiceImpl implements RFQService {
         }
     }
 
-    @Override
-    @Transactional
-    public List<UserResponseDto> getAllVendors() {
-        return userRepository.findByRole("VENDOR")
-                .stream()
-                .map(user->modelMapper.map(user, UserResponseDto.class))
-                .toList();
-    }
+
 
     @Override
     @Transactional
@@ -138,6 +132,24 @@ public class RFQServiceImpl implements RFQService {
 
     @Override
     @Transactional
+    public void openToRebid(Long id) {
+        RFQ rfq=rfqRepository.findById(id)
+                .orElseThrow(()->new BusinessException("RFQ not found with ID: "+id));
+
+        if(Boolean.TRUE.equals(rfq.getIsDeleted())) {
+            throw new BusinessException("Inactive RFQ cannot be opened for rebid.");
+        }
+
+        if(rfq.getStatus()!=RFQStatus.CLOSED) {
+            throw new BusinessException("Only CLOSED RFQ can be opened for rebid.");
+        }
+
+        rfq.setStatus(RFQStatus.REOPENED);
+        rfqRepository.save(rfq);
+    }
+
+    @Override
+    @Transactional
     public RFQResponseDto getRFQById(Long id) {
         RFQ rfq=rfqRepository.findByRfqIdAndIsDeletedFalse(id)
                 .orElseThrow(()->new BusinessException("RFQ not found with ID: "+id));
@@ -147,6 +159,15 @@ public class RFQServiceImpl implements RFQService {
         }
 
         return modelMapper.map(rfq,RFQResponseDto.class);
+    }
+
+    @Override
+    @Transactional
+    public List<UserResponseDto> getAllVendors() {
+        return userRepository.findByRole("VENDOR")
+                .stream()
+                .map(user->modelMapper.map(user, UserResponseDto.class))
+                .toList();
     }
 
     @Override
@@ -195,21 +216,5 @@ public class RFQServiceImpl implements RFQService {
         rfqItemRepository.save(item);
     }
 
-    @Override
-    @Transactional
-    public void openToRebid(Long id) {
-        RFQ rfq=rfqRepository.findById(id)
-                .orElseThrow(()->new BusinessException("RFQ not found with ID: "+id));
 
-        if(Boolean.TRUE.equals(rfq.getIsDeleted())) {
-            throw new BusinessException("Inactive RFQ cannot be opened for rebid.");
-        }
-
-        if(rfq.getStatus()!=RFQStatus.CLOSED) {
-            throw new BusinessException("Only CLOSED RFQ can be opened for rebid.");
-        }
-
-        rfq.setStatus(RFQStatus.REOPENED);
-        rfqRepository.save(rfq);
-    }
 }
